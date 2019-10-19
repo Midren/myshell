@@ -29,7 +29,11 @@ public:
                         exit(std::stoi(params.front().value));
                     exit(0);
                 }},
-                {std::string("mecho"),   [](std::vector<Token> params) { return 0; }},
+                {std::string("mecho"),   [](std::vector<Token> params) {
+                    for (auto &token: params)
+                        printw("%s ", token.value.c_str());
+                    return 0;
+                }},
                 {std::string("mexport"), [](std::vector<Token> params) { return 0; }}
         };
 
