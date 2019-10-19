@@ -22,6 +22,7 @@ enum TokenType {
 };
 
 struct Token {
+
     explicit Token(std::string &data, TokenType t) : value(data), type(t) {
         switch (type) {
             case CmdQuoteWord:
@@ -38,7 +39,8 @@ struct Token {
                 //TODO: invoke shell to run command
                 break;
             default:
-                value = parse_wic(data);
+                if(data.find_first_of("*?[") != std::string::npos)
+                    value = parse_wic(data);
                 break;
         }
     }
@@ -61,10 +63,10 @@ bool matches(std::string text, std::string pattern) {
         if (text[i] == pattern[j]) {
             i++;
             j++;
-        } else if (j < m && pattern[j] == '?') {
+        } else if (j < m and pattern[j] == '?') {
             i++;
             j++;
-        } else if (j < m && pattern[j] == '*') {
+        } else if (j < m and pattern[j] == '*') {
             textPointer = i;
             pattPointer = j;
             j++;
@@ -72,6 +74,8 @@ bool matches(std::string text, std::string pattern) {
             j = pattPointer + 1;
             i = textPointer + 1;
             textPointer++;
+        } else if (j < m && pattern[j] == '['){
+
         } else
             return false;
     }
@@ -115,4 +119,4 @@ std::string parse_wic(std::string data) {
 }
 
 
-#endif //MYSHELL_TOKEN_H
+#endif
