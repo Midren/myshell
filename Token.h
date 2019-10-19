@@ -24,11 +24,8 @@ struct Token {
                 break;
             case CmdDoubleQuoteWord:
                 value = value.substr(1, value.length() - 2);
-                //TODO: replace local variables
                 break;
             case Var:
-                //TODO: add new variable to shell
-                break;
             case InlineCmd:
                 //TODO: invoke shell to run command
                 break;

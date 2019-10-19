@@ -15,19 +15,19 @@
 
 std::vector<Token> parse(const std::string &line) {
     std::vector<Token> tokens;
-    std::stringstream ss(line.substr(0, line.find(("#"))));
+    std::stringstream ss(line.substr(0, line.find('#')));
     std::string word, tmp;
     while (ss >> word) {
         if (is_with_symbol(word, '\"')) {
             if (word[word.length() - 1] != '\"') {
                 std::getline(ss, tmp, '\"');
-                word += ' ' + tmp + '\"';
+                word += tmp + '\"';
             }
             tokens.emplace_back(word, TokenType::CmdDoubleQuoteWord);
         } else if (is_with_symbol(word, '\'')) {
             if (word[word.length() - 1] != '\'') {
                 std::getline(ss, tmp, '\'');
-                word += ' ' + tmp + '\'';
+                word += tmp + '\'';
             }
             tokens.emplace_back(word, TokenType::CmdQuoteWord);
         } else if (is_with_symbol(word, '=')) {
@@ -79,7 +79,7 @@ public:
                 case '\n':
                     addch('\n');
                     execute(line);
-                    printw(line.c_str());
+//                    printw(line.c_str());
                     line.clear();
                     printw("\n%s $ ", pwd.c_str());
                     break;
@@ -99,24 +99,40 @@ public:
         });
         std::vector<Command> commands;
         for (auto &cmd:token_commands) {
-            for (const auto &token:cmd) {
+            for (auto &token:cmd) {
                 if (token.type == TokenType::AddVar) {
                     local_variables[token.value.substr(0, token.value.find('='))] =
                             token.value.substr(token.value.find('=') + 1, token.value.size() - line.find(('=')) - 1);
-                    continue;
+                } else if (token.type == TokenType::Var) {
+                    token.value = local_variables[token.value.substr(1, token.value.length() - 1)];
+                } else if (token.type == TokenType::CmdDoubleQuoteWord) {
+                    std::string new_val;
+                    size_t last = 0;
+                    for (size_t i = 0; i < token.value.size(); i++) {
+                        if (token.value[i] == '$') {
+                            new_val += token.value.substr(last, i - last);
+                            last = i;
+                            while (token.value[i] != ' ' && (i != token.value.size())) { i++; }
+                            new_val += local_variables[token.value.substr(last + 1, i - last - 1)];
+                            last = i;
+                        }
+                    }
+                    if (last != token.value.size())
+                        new_val += token.value.substr(last, token.value.size() - last - 1);
+                    token.value = new_val;
+                    token.type = TokenType::CmdWord;
                 }
             }
             commands.emplace_back(cmd);
         }
 
-//        std::cout << std::endl;
-//        for (auto &cmd:commands) {
-//            for (auto &token: cmd.tokens) {
-//                std::cout << token.value << " ";
-//            }
-//            std::cout << std::endl;
-//            std::cout << std::boolalpha << cmd.is_background << std::endl;
-//        }
+        addch('\n');
+        for (auto &cmd:commands) {
+            for (auto &token: cmd.tokens) {
+                printw("_%s_ ", token.value.c_str());
+            }
+        }
+        addch('\n');
     }
 
 private:
