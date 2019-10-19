@@ -15,6 +15,29 @@ public:
 
 
     void execute() {
+        std::map<std::string, std::function<int(std::vector<Token>)>> internal_functions = {
+                {std::string("merrno"),  [](std::vector<Token> params) { return 0; }},
+                {std::string("mpwd"),    [](std::vector<Token> params) { return 0; }},
+                {std::string("mcd"),     [](std::vector<Token> params) { return 0; }},
+                {std::string("mexit"),   [](std::vector<Token> params) {
+                    for (auto &token: params)
+                        if (token.value == "-h" || token.value == "--help") {
+                            printw("\nmpwd [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
+                            return 0;
+                        }
+                    if (!params.empty())
+                        exit(std::stoi(params.front().value));
+                    exit(0);
+                }},
+                {std::string("mecho"),   [](std::vector<Token> params) { return 0; }},
+                {std::string("mexport"), [](std::vector<Token> params) { return 0; }}
+        };
+
+        auto cmd_name = tokens.front().value;
+        tokens.erase(tokens.begin());
+        if (internal_functions.find(cmd_name) != internal_functions.end())
+            internal_functions[cmd_name](tokens);
+
         addch('\n');
         for (auto &token: tokens) {
             printw("_%s_ ", token.value.c_str());
