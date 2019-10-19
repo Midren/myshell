@@ -98,8 +98,16 @@ public:
             return token.type == TokenType::Pipe;
         });
         std::vector<Command> commands;
-        for (auto &cmd:token_commands)
+        for (auto &cmd:token_commands) {
+            for (const auto &token:cmd) {
+                if (token.type == TokenType::AddVar) {
+                    local_variables[token.value.substr(0, token.value.find('='))] =
+                            token.value.substr(token.value.find('=') + 1, token.value.size() - line.find(('=')) - 1);
+                    continue;
+                }
+            }
             commands.emplace_back(cmd);
+        }
 
 //        std::cout << std::endl;
 //        for (auto &cmd:commands) {
@@ -112,7 +120,8 @@ public:
     }
 
 private:
-    std::map<std::string, std::string> variables;
+    std::map<std::string, std::string> local_variables;
+    std::map<std::string, std::string> exported_variables;
     std::string pwd;
 };
 
