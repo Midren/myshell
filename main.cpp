@@ -4,13 +4,7 @@
 #include <sstream>
 
 #include "Command.h"
-
-bool is_with_symbol(const std::string &str, char sym) {
-    for (auto &c: str)
-        if (c == sym)
-            return true;
-    return false;
-}
+#include "util.h"
 
 std::vector<Token> parse(const std::string &line) {
     std::vector<Token> tokens;
@@ -47,16 +41,25 @@ std::vector<Token> parse(const std::string &line) {
             tokens.emplace_back(word, TokenType::CmdWord);
         }
     }
-    std::cout << ss.str() << std::endl;
     return tokens;
 }
 
 int main() {
-    auto line = std::string(R"(ls -a "/some/path/to/file"/$MYVAR | wc -a & 'file.txt' &)");
-//    auto line = std::string(R"(ls "/some/path to/file" | wc -a $(echo 'file.txt') &)");
+    auto line = std::string(R"(ls "/some/path to/file" | wc -a $(echo 'file.txt') &)");
     auto tokens = parse(line);
-    for (auto &token: tokens) {
-        std::cout << token.value << " " << token.type << std::endl;
+    std::vector<std::vector<Token>> token_commands = split<Token>(tokens, [](const Token &token) {
+        return token.type == TokenType::Pipe;
+    });
+    std::vector<Command> commands;
+    for (auto &cmd:token_commands)
+        commands.emplace_back(cmd);
+
+    for (auto &cmd:commands) {
+        for (auto &token: cmd.tokens) {
+            std::cout << token.value << " ";
+        }
+        std::cout << std::endl;
+        std::cout << std::boolalpha << cmd.is_background << std::endl;
     }
     return 0;
 }

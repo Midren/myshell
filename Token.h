@@ -1,7 +1,3 @@
-//
-// Created by midren on 18.10.19.
-//
-
 #ifndef MYSHELL_TOKEN_H
 #define MYSHELL_TOKEN_H
 
@@ -19,15 +15,28 @@ enum TokenType {
     BackgroundType
 };
 
-class Token {
-public:
-    explicit Token(std::string &data, TokenType t) : value(data), type(t) {}
-
-    void process() {
-
+struct Token {
+    explicit Token(std::string &data, TokenType t) : value(data), type(t) {
+        switch (type) {
+            case CmdQuoteWord:
+                value = value.substr(1, value.length() - 2);
+                break;
+            case CmdDoubleQuoteWord:
+                //TODO: replace local variables
+                break;
+            case Var:
+                //TODO: add new variable to shell
+                break;
+            case InlineCmd:
+                //TODO: invoke shell to run command
+                break;
+            default:
+                break;
+        }
     }
 
-//private:
+    Token(const Token &t) = default;
+
     TokenType type;
     std::string value;
 };

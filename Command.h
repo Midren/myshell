@@ -1,7 +1,3 @@
-//
-// Created by midren on 18.10.19.
-//
-
 #ifndef MYSHELL_COMMAND_H
 #define MYSHELL_COMMAND_H
 
@@ -11,9 +7,14 @@
 
 class Command {
 public:
-    explicit Command(std::vector<Token> &t) : tokens(t) {}
+    explicit Command(std::vector<Token> &t) : tokens(t) {
+        if (tokens[tokens.size() - 1].type == TokenType::BackgroundType) {
+            is_background = true;
+            tokens.erase(tokens.end() - 1);
+        }
+    }
 
-private:
+//private:
     void set_input_file() {
 
     }
