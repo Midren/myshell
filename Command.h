@@ -8,10 +8,7 @@
 class Command {
 public:
     explicit Command(std::vector<Token> &t) : tokens(t) {
-        if (tokens[tokens.size() - 1].type == TokenType::BackgroundType) {
-            is_background = true;
-            tokens.erase(tokens.end() - 1);
-        }
+        set_background_mode();
     }
 
 //private:
@@ -24,6 +21,13 @@ public:
     }
 
     void set_background_mode() {
+        if (tokens[tokens.size() - 1].type == TokenType::BackgroundType) {
+            is_background = true;
+            tokens.erase(tokens.end() - 1);
+        }
+    }
+
+    void execute() {
 
     }
 

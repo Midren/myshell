@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <iostream>
+#include <curses.h>
 
 #include "Command.h"
 #include "util.h"
@@ -53,20 +54,33 @@ std::vector<Token> parse(const std::string &line) {
 
 class Shell {
 public:
-    Shell() = default;
+    Shell() {
+        initscr();
+        noecho();
+    };
+
+    ~Shell() {
+        endwin();
+    }
 
     void start() {
+        printw("%s $ ", pwd.c_str());
         std::string line;
         char c;
         while (true) {
-            c = getchar();
+            c = getch();
             switch (c) {
                 case EOF:
                     goto exit;
                 case '\n':
+                    addch('\n');
+                    execute(line);
+                    printw(line.c_str());
+                    line.clear();
+                    printw("\n%s $ ", pwd.c_str());
                     break;
                 default:
-                    fputc(c, stdout);
+                    addch(c);
                     line += c;
             }
         }
@@ -83,6 +97,7 @@ public:
         for (auto &cmd:token_commands)
             commands.emplace_back(cmd);
 
+//        std::cout << std::endl;
 //        for (auto &cmd:commands) {
 //            for (auto &token: cmd.tokens) {
 //                std::cout << token.value << " ";
