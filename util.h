@@ -1,3 +1,6 @@
+#ifndef MYSHELL_UTIL_H
+#define MYSHELL_UTIL_H
+
 #include <string>
 #include <functional>
 #include <vector>
@@ -23,3 +26,5 @@ std::vector<std::vector<T>> split(std::vector<T> &container, std::function<bool(
     ret.emplace_back(container.begin() + last, container.end());
     return ret;
 }
+
+#endif

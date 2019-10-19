@@ -5,10 +5,11 @@
 #include <string>
 #include <cstdio>
 #include <cstdlib>
-#include <unistd.h>
 #include <sstream>
 #include <iostream>
 #include <curses.h>
+
+#include <unistd.h>
 
 #include "Command.h"
 #include "util.h"
@@ -44,7 +45,7 @@ std::vector<Token> parse(const std::string &line) {
             } else {
                 tokens.emplace_back(word, TokenType::Var);
             }
-        } else if (word[0] == '>') {
+        } else if (word[0] == '>' || word[1] == '>' || word[0] == '<') {
             tokens.emplace_back(word, TokenType::Redirection);
         } else {
             tokens.emplace_back(word, TokenType::CmdWord);
@@ -61,6 +62,10 @@ public:
     Shell() {
         initscr();
         noecho();
+        char *buffer = new char[PATH_MAX];
+        auto cwd = getcwd(buffer, PATH_MAX);
+        pwd = std::string(cwd);
+        free(buffer);
     };
 
     ~Shell() {
@@ -82,7 +87,6 @@ public:
                 case '\n':
                     addch('\n');
                     execute(line);
-//                    printw(line.c_str());
                     line.clear();
                     printw("\n%s $ ", pwd.c_str());
                     max_x = start_x;
@@ -124,10 +128,13 @@ public:
 
     void execute(std::string line) {
         auto tokens = parse(line);
+
         std::vector<std::vector<Token>> token_commands = split<Token>(tokens, [](const Token &token) {
             return token.type == TokenType::Pipe;
         });
+
         std::vector<Command> commands;
+
         for (auto &cmd:token_commands) {
             for (auto &token:cmd) {
                 if (token.type == TokenType::AddVar) {
@@ -148,7 +155,7 @@ public:
                         }
                     }
                     if (last != token.value.size())
-                        new_val += token.value.substr(last, token.value.size() - last - 1);
+                        new_val += token.value.substr(last, token.value.size() - last);
                     token.value = new_val;
                     token.type = TokenType::CmdWord;
                 }
@@ -156,13 +163,7 @@ public:
             commands.emplace_back(cmd);
         }
 
-        addch('\n');
-        for (auto &cmd:commands) {
-            for (auto &token: cmd.tokens) {
-                printw("_%s_ ", token.value.c_str());
-            }
-        }
-        addch('\n');
+        std::for_each(commands.begin(), commands.end(), std::mem_fn(&Command::execute));
     }
 
 private:
