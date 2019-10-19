@@ -22,6 +22,7 @@ struct Token {
                 value = value.substr(1, value.length() - 2);
                 break;
             case CmdDoubleQuoteWord:
+                value = value.substr(1, value.length() - 2);
                 //TODO: replace local variables
                 break;
             case Var:
@@ -31,6 +32,7 @@ struct Token {
                 //TODO: invoke shell to run command
                 break;
             default:
+                //TODO: replace wildcards
                 break;
         }
     }
