@@ -30,6 +30,8 @@ std::vector<Token> parse(const std::string &line) {
                 word += ' ' + tmp + '\'';
             }
             tokens.emplace_back(word, TokenType::CmdQuoteWord);
+        } else if (is_with_symbol(word, '=')) {
+            tokens.emplace_back(word, TokenType::AddVar);
         } else if (word == "|") {
             tokens.emplace_back(word, TokenType::Pipe);
         } else if (word == "&") {
@@ -48,7 +50,9 @@ std::vector<Token> parse(const std::string &line) {
             tokens.emplace_back(word, TokenType::CmdWord);
         }
     }
-    return tokens;
+
+    return
+            tokens;
 }
 
 

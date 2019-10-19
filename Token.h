@@ -8,6 +8,7 @@ enum TokenType {
     CmdWord,
     CmdQuoteWord,
     CmdDoubleQuoteWord,
+    AddVar,
     Var,
     InlineCmd,
     Redirection,
