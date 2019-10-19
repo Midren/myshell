@@ -1,7 +1,9 @@
 #include "Shell.h"
+#include "Token.h"
 
 int main() {
-    auto shell = Shell();
-    shell.start();
+    std::cout << parse_wic("../*.cpp");
+//    auto shell = Shell();
+//    shell.start();
     return 0;
 }
