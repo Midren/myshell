@@ -68,9 +68,12 @@ public:
     }
 
     void start() {
+        keypad(stdscr, true);
         printw("%s $ ", pwd.c_str());
         std::string line;
-        char c;
+        wchar_t c;
+        int x, y, start_x = pwd.size() + 3;
+        int max_x = start_x;
         while (true) {
             c = getch();
             switch (c) {
@@ -82,11 +85,38 @@ public:
                     printw(line.c_str());
                     line.clear();
                     printw("\n%s $ ", pwd.c_str());
+                    max_x = start_x;
+                    break;
+                case KEY_LEFT:
+                    getsyx(y, x);
+                    x > start_x ? move(y, x - 1) : move(y, x);
+                    break;
+                case KEY_RIGHT:
+                    getsyx(y, x);
+                    x < max_x ? move(y, x + 1) : move(y, x);;
+                    break;
+                case KEY_UP:
+                    // TODO PREVIOUS COMAND
+                    break;
+                case KEY_DOWN:
+                    // TODO NEXT COMMAND
+                    break;
+                case KEY_BACKSPACE:
+                    getsyx(y, x);
+                    if (x > start_x) {
+                        line.pop_back();
+                        move(y, x - 1);
+                        delch();
+                        max_x--;
+                    }
+
                     break;
                 default:
                     addch(c);
+                    max_x++;
                     line += c;
             }
+            refresh();
         }
         exit:
         return;
@@ -121,7 +151,6 @@ public:
 
 private:
     std::map<std::string, std::string> local_variables;
-    std::map<std::string, std::string> exported_variables;
     std::string pwd;
 };
 
