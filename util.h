@@ -4,10 +4,8 @@
 #include <string>
 #include <functional>
 #include <vector>
-
 #include <sys/types.h>
 #include <dirent.h>
-
 
 std::string parse_wic(std::string data);
 
@@ -30,7 +28,7 @@ std::vector<std::vector<T>> split(std::vector<T> &container, std::function<bool(
 
 bool matches(std::string text, std::string pattern);
 
-std::string join(const std::vector<std::string> &array, const char separator);
+std::string join(const std::vector<std::string> &array, char separator);
 
 std::string parse_wic(std::string data);
 
