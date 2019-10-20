@@ -1,6 +1,5 @@
 #ifndef MYSHELL_UTIL_H
 #define MYSHELL_UTIL_H
-
 #include <string>
 #include <functional>
 #include <vector>

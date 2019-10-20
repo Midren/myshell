@@ -5,6 +5,7 @@
 
 #include <sys/types.h>
 #include <dirent.h>
+#include "util.h"
 
 std::string parse_wic(std::string data);
 
@@ -36,7 +37,7 @@ struct Token {
                 //TODO: invoke shell to run command
                 break;
             default:
-                if(data.find_first_of("*?[") != std::string::npos)
+                if (data.find_first_of("*?[") != std::string::npos)
                     value = parse_wic(data);
                 break;
         }
@@ -51,7 +52,7 @@ struct Token {
 bool matches(std::string text, std::string pattern) {
     int n = text.size();
     int m = pattern.size();
-
+    bool found = false;
     if (m == 0)
         return (n == 0);
 
@@ -71,16 +72,22 @@ bool matches(std::string text, std::string pattern) {
             j = pattPointer + 1;
             i = textPointer + 1;
             textPointer++;
-        } else if (j < m && pattern[j] == '['){
-
+        } else if (j < m && pattern[j] == '[') {
+            j++;
+            while (pattern[j] != ']') {
+                if (pattern[j] == text[i] && !found) {
+                    i++;
+                    found = true;
+                }
+                j++;
+            }
+            j++;
         } else
             return false;
     }
-
     while (j < m && pattern[j] == '*') {
         j++;
     }
-
     return j == m;
 
 }
@@ -98,9 +105,15 @@ std::string join(const std::vector<std::string> &array, const char separator) {
 }
 
 std::string parse_wic(std::string data) {
-    size_t path_end = data.find_last_of('/');
-    std::string path = data.substr(0, path_end + 1);
-    std::string pattern = data.substr(path_end + 1, data.length() - 1);
+    std::string path, pattern;
+    if (is_with_symbol(data, '/')) {
+        size_t path_end = data.find_last_of('/');
+        path = data.substr(0, path_end + 1);
+        pattern = data.substr(path_end + 1, data.length() - 1);
+    } else {
+        path = "./";
+        pattern = data;
+    }
     std::vector<std::string> files;
     DIR *dp;
     struct dirent *ep;
