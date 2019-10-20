@@ -174,7 +174,7 @@ public:
             for (auto &token:cmd) {
                 if (token.type == TokenType::AddVar) {
                     local_variables[token.value.substr(0, token.value.find('='))] =
-                            token.value.substr(token.value.find('=') + 1, token.value.size() - line.find(('=')) - 1);
+                            token.value.substr(token.value.find('=') + 1, token.value.size() - token.value.find(('=')) - 1);
                 } else if (token.type == TokenType::Var) {
                     token.value = local_variables[token.value.substr(1, token.value.length() - 1)];
                 } else if (token.type == TokenType::CmdDoubleQuoteWord) {
