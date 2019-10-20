@@ -1,16 +1,17 @@
-#ifndef MYSHELL_UTIL_H
-#define MYSHELL_UTIL_H
+#ifndef MYSHELL_UTIL_CPP
+#define MYSHELL_UTIL_CPP
+
 #include <string>
 #include <functional>
 #include <vector>
 
-bool is_with_symbol(const std::string &str, char sym) {
-    //TODO: Add check for escape symbol (\", \' \=)
-    for (auto &c: str)
-        if (c == sym)
-            return true;
-    return false;
-}
+#include <sys/types.h>
+#include <dirent.h>
+
+
+std::string parse_wic(std::string data);
+
+bool is_with_symbol(const std::string &str, char sym);
 
 template<typename T>
 std::vector<std::vector<T>> split(std::vector<T> &container, std::function<bool(const T &)> const &func) {
@@ -25,5 +26,13 @@ std::vector<std::vector<T>> split(std::vector<T> &container, std::function<bool(
     ret.emplace_back(container.begin() + last, container.end());
     return ret;
 }
+
+
+bool matches(std::string text, std::string pattern);
+
+std::string join(const std::vector<std::string> &array, const char separator);
+
+std::string parse_wic(std::string data);
+
 
 #endif
