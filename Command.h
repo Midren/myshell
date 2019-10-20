@@ -5,6 +5,7 @@
 
 #include "Token.h"
 #include "util.h"
+#include <cstdlib>
 
 class Command {
 public:
@@ -22,7 +23,7 @@ public:
                 {std::string("mexit"),   [](std::vector<Token> params) {
                     for (auto &token: params)
                         if (token.value == "-h" || token.value == "--help") {
-                            printw("\nmpwd [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
+                            printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
                             return 0;
                         }
                     if (!params.empty())
@@ -34,7 +35,24 @@ public:
                         printw("%s ", token.value.c_str());
                     return 0;
                 }},
-                {std::string("mexport"), [](std::vector<Token> params) { return 0; }}
+                {std::string("mexport"), [](std::vector<Token> params) {
+                    for (auto &token: params)
+                        if (token.value == "-h" || token.value == "--help") {
+                            printw("\nmexport [VAR=VAL] [-h|--help]\n\nSets global environmental variable.");
+                            return 0;
+                        }
+                    for (auto &token: params)
+                        if (token.type == TokenType::AddVar) {
+                            setenv(token.value.substr(0, token.value.find('=')).c_str(),
+                                   token.value.substr(token.value.find('=') + 1,
+                                                      token.value.size() - token.value.find(('=')) - 1).c_str(), 1);
+                            // TODO add to local shell variables
+//                            local_variables[token.value.substr(0, token.value.find('='))] =
+//                                    token.value.substr(token.value.find('=') + 1, token.value.size() - token.value.find(('=')) - 1);
+                        }
+                    return 0;
+
+                }}
         };
 
         auto cmd_name = tokens.front().value;
