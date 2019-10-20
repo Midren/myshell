@@ -2,12 +2,14 @@
 #define MYSHELL_SHELL_H
 
 #include <map>
+#include <list>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
 #include <curses.h>
+#include <fstream>
 
 #include <unistd.h>
 
@@ -59,7 +61,13 @@ std::vector<Token> parse(const std::string &line) {
 
 class Shell {
 public:
-    Shell() {
+    Shell() : history{} {
+        std::ifstream history_file{".history"};
+        std::string command;
+        while (getline(history_file, command)) {
+            history.push_front(command);
+        }
+        history_file.close();
         initscr();
         noecho();
         char *buffer = new char[PATH_MAX];
@@ -69,6 +77,12 @@ public:
     };
 
     ~Shell() {
+        std::ofstream history_file{".history"};
+        while (!history.empty()) {
+            history_file << history.back() << std::endl;
+            history.pop_back();
+        }
+        history_file.close();
         endwin();
     }
 
@@ -79,17 +93,21 @@ public:
         wchar_t c;
         int x, y, start_x = pwd.size() + 3;
         int max_x = start_x;
+        auto last_command = history.rbegin();
         while (true) {
             c = getch();
             switch (c) {
                 case EOF:
                     goto exit;
                 case '\n':
-                    addch('\n');
+                    getsyx(y, x);
+                    mvaddch(y, max_x, '\n');
+                    history.push_back(line);
                     execute(line);
                     line.clear();
                     printw("\n%s $ ", pwd.c_str());
                     max_x = start_x;
+                    last_command = history.rbegin();
                     break;
                 case KEY_LEFT:
                     getsyx(y, x);
@@ -100,10 +118,25 @@ public:
                     x < max_x ? move(y, x + 1) : move(y, x);;
                     break;
                 case KEY_UP:
-                    // TODO PREVIOUS COMAND
+                    if (last_command != history.rend()) {
+                        getsyx(y, x);
+                        move(y, start_x);
+                        clrtoeol();
+                        line = *last_command;
+                        printw("%s", line.c_str());
+                        max_x = start_x + line.size();
+                        ++last_command;
+                    }
                     break;
                 case KEY_DOWN:
-                    // TODO NEXT COMMAND
+                    if (--last_command != --history.rbegin()) {
+                        getsyx(y, x);
+                        move(y, start_x);
+                        clrtoeol();
+                        line = *last_command;
+                        printw("%s", line.c_str());
+                        max_x = start_x + line.size();
+                    } else ++last_command;
                     break;
                 case KEY_BACKSPACE:
                     getsyx(y, x);
@@ -116,9 +149,11 @@ public:
 
                     break;
                 default:
-                    addch(c);
+                    insch(c);
+                    getsyx(y, x);
+                    move(y, x + 1);
                     max_x++;
-                    line += c;
+                    line.insert(line.begin() + x - start_x, c);
             }
             refresh();
         }
@@ -168,6 +203,7 @@ public:
 
 private:
     std::map<std::string, std::string> local_variables;
+    std::list<std::string> history;
     std::string pwd;
 };
 
