@@ -5,13 +5,14 @@
 #include <string>
 
 #include "Token.h"
+#include "Shell.h"
 
 class Command {
 public:
     explicit Command(std::vector<Token> &t);
 
 
-    void execute();
+    void execute(Shell *shell);
 
 private:
     void set_redirected_files();

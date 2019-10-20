@@ -16,6 +16,7 @@ public:
     void execute(std::string line);
 
 private:
+    friend class Command;
     std::map<std::string, std::string> local_variables;
     std::list<std::string> history;
     std::string pwd;

@@ -153,7 +153,8 @@ void Shell::execute(std::string line) {
         commands.emplace_back(cmd);
     }
 
-    std::for_each(commands.begin(), commands.end(), std::mem_fn(&Command::execute));
+    std::for_each(commands.begin(), commands.end(),
+                  std::bind(std::mem_fn(&Command::execute), std::placeholders::_1, this));
 }
 
 std::vector<Token> parse(const std::string &line) {

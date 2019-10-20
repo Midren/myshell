@@ -11,7 +11,7 @@ Command::Command(std::vector<Token> &t) : tokens(t) {
     set_redirected_files();
 }
 
-void Command::execute() {
+void Command::execute(Shell *shell) {
     std::map<std::string, std::function<int(std::vector<Token>)>> internal_functions = {
             {std::string("merrno"),  [](std::vector<Token> params) { return 0; }},
             {std::string("mpwd"),    [](std::vector<Token> params) { return 0; }},
@@ -31,7 +31,7 @@ void Command::execute() {
                     printw("%s ", token.value.c_str());
                 return 0;
             }},
-            {std::string("mexport"), [](std::vector<Token> params) {
+            {std::string("mexport"), [&shell](std::vector<Token> params) {
                 for (auto &token: params)
                     if (token.value == "-h" || token.value == "--help") {
                         printw("\nmexport [VAR=VAL] [-h|--help]\n\nSets global environmental variable.");
@@ -42,12 +42,16 @@ void Command::execute() {
                         setenv(token.value.substr(0, token.value.find('=')).c_str(),
                                token.value.substr(token.value.find('=') + 1,
                                                   token.value.size() - token.value.find(('=')) - 1).c_str(), 1);
-                        // TODO add to local shell variables
-//                            local_variables[token.value.substr(0, token.value.find('='))] =
-//                                    token.value.substr(token.value.find('=') + 1, token.value.size() - token.value.find(('=')) - 1);
+                        shell->local_variables[token.value.substr(0, token.value.find('='))] =
+                                token.value.substr(token.value.find('=') + 1,
+                                                   token.value.size() - token.value.find(('=')) - 1);
+                    } else {
+                        if (shell->local_variables.find(token.value) != shell->local_variables.end())
+                            setenv(token.value.c_str(), shell->local_variables[token.value].c_str(), 1);
+                        else
+                            printw("%s is not defined!\n", token.value.c_str());
                     }
                 return 0;
-
             }}
     };
 
