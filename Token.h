@@ -81,6 +81,8 @@ bool matches(std::string text, std::string pattern) {
                 }
                 j++;
             }
+            if(!found)
+                return false;
             j++;
         } else
             return false;
