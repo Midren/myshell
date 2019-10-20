@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <map>
 #include <curses.h>
+#include <iostream>
 
 #include "util.h"
 
@@ -11,13 +12,14 @@ std::map<std::string, std::function<int(std::vector<Token>)>> Command::internal_
         {std::string("mpwd"),    [](std::vector<Token> params) { return 0; }},
         {std::string("mcd"),     [](std::vector<Token> params) { return 0; }},
         {std::string("mexit"),   [](std::vector<Token> params) {
-            for (auto &token: params)
-                if (token.value == "-h" || token.value == "--help") {
-                    printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
-                    return 0;
-                }
-            if (!params.empty())
+            if (!params.empty()) {
+                for (auto &token: params)
+                    if (token.value == "-h" || token.value == "--help") {
+                        printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
+                        return 0;
+                    }
                 exit(std::stoi(params.front().value));
+            }
             exit(0);
         }},
         {std::string("mecho"),   [](std::vector<Token> params) {
@@ -46,7 +48,7 @@ std::map<std::string, std::function<int(std::vector<Token>)>> Command::internal_
 };
 
 Command::Command(std::vector<Token> &t) {
-    if (t.size() > 0) {
+    if (!t.empty()) {
         cmd_name = t.front().value;
         params = {t.begin() + 1, t.end()};
         set_background_mode();
@@ -96,6 +98,8 @@ void Command::set_redirected_files() {
 }
 
 void Command::set_background_mode() {
+    if (params.empty())
+        return;
     if (params[params.size() - 1].type == TokenType::BackgroundType) {
         is_background = true;
         params.erase(params.end() - 1);

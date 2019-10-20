@@ -1,4 +1,5 @@
 #include "util.h"
+#include <dirent.h>
 
 bool is_with_symbol(const std::string &str, char sym) {
     //TODO: Add check for escape symbol (\", \' \=)
@@ -27,10 +28,6 @@ bool matches(std::string text, std::string pattern) {
             textPointer = i;
             pattPointer = j;
             j++;
-        } else if (pattPointer != -1) {
-            j = pattPointer + 1;
-            i = textPointer + 1;
-            textPointer++;
         } else if (j < m && pattern[j] == '[') {
             j++;
             while (pattern[j] != ']') {
@@ -42,7 +39,12 @@ bool matches(std::string text, std::string pattern) {
             }
             if (!found)
                 return false;
+            found = false;
             j++;
+        } else if (pattPointer != -1) {
+            j = pattPointer + 1;
+            i = textPointer + 1;
+            textPointer++;
         } else
             return false;
     }

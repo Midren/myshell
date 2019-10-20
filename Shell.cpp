@@ -195,7 +195,6 @@ std::vector<Token> parse(const std::string &line) {
         }
     }
 
-    return
-            tokens;
+    return tokens;
 }
 
