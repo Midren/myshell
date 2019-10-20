@@ -1,3 +1,3 @@
 [submodule "mycat"]
 	path = mycat
-	url = git://github.com/RomanMilishchuk/mycat.git
+	url = https://github.com/RomanMilishchuk/mycat.git
