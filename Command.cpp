@@ -3,8 +3,12 @@
 #include <cstdlib>
 #include <map>
 #include <curses.h>
+#include <unistd.h>
 
 #include "util.h"
+#include <sys/stat.h>
+
+struct stat sb; // For cd;
 
 Command::Command(std::vector<Token> &t) : tokens(t) {
     set_background_mode();
@@ -15,13 +19,21 @@ void Command::execute(Shell *shell) {
     std::map<std::string, std::function<int(std::vector<Token>)>> internal_functions = {
             {std::string("merrno"),  [](std::vector<Token> params) { return 0; }},
             {std::string("mpwd"),    [](std::vector<Token> params) { return 0; }},
-            {std::string("mcd"),     [](std::vector<Token> params) { return 0; }},
-            {std::string("mexit"),   [](std::vector<Token> params) {
+            {std::string("mcd"),     [&shell](std::vector<Token> params) {
+                if (stat(params[0].value.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
+                    chdir(params[0].value.c_str());
+                    shell->pwd = get_current_dir_name();
+                } else
+                    printw("%s is not a directory!", params[0].value.c_str());
+                return 0;
+            }},
+            {std::string("mexit"),   [&](std::vector<Token> params) {
                 for (auto &token: params)
                     if (token.value == "-h" || token.value == "--help") {
                         printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
                         return 0;
                     }
+                // TODO HERE NORMAL EXIT WITH DESTRUCTOR CALLS PLEZA
                 if (!params.empty())
                     exit(std::stoi(params.front().value));
                 exit(0);

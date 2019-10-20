@@ -60,6 +60,7 @@ void Shell::start() {
                 execute(line);
                 line.clear();
                 printw("\n%s $ ", pwd.c_str());
+                start_x = pwd.size() + 3;
                 max_x = start_x;
                 last_command = history.rbegin();
                 break;
