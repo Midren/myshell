@@ -6,86 +6,89 @@
 
 #include "util.h"
 
-Command::Command(std::vector<Token> &t) : tokens(t) {
-    set_background_mode();
-    set_redirected_files();
+std::map<std::string, std::function<int(std::vector<Token>)>> Command::internal_functions = {
+        {std::string("merrno"),  [](std::vector<Token> params) { return 0; }},
+        {std::string("mpwd"),    [](std::vector<Token> params) { return 0; }},
+        {std::string("mcd"),     [](std::vector<Token> params) { return 0; }},
+        {std::string("mexit"),   [](std::vector<Token> params) {
+            for (auto &token: params)
+                if (token.value == "-h" || token.value == "--help") {
+                    printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
+                    return 0;
+                }
+            if (!params.empty())
+                exit(std::stoi(params.front().value));
+            exit(0);
+        }},
+        {std::string("mecho"),   [](std::vector<Token> params) {
+            for (auto &token: params)
+                printw("%s ", token.value.c_str());
+            return 0;
+        }},
+        {std::string("mexport"), [](std::vector<Token> params) {
+            for (auto &token: params)
+                if (token.value == "-h" || token.value == "--help") {
+                    printw("\nmexport [VAR=VAL] [-h|--help]\n\nSets global environmental variable.");
+                    return 0;
+                }
+            for (auto &token: params)
+                if (token.type == TokenType::AddVar) {
+                    setenv(token.value.substr(0, token.value.find('=')).c_str(),
+                           token.value.substr(token.value.find('=') + 1,
+                                              token.value.size() - token.value.find(('=')) - 1).c_str(), 1);
+                    // TODO add to local shell variables
+//                            local_variables[token.value.substr(0, token.value.find('='))] =
+//                                    token.value.substr(token.value.find('=') + 1, token.value.size() - token.value.find(('=')) - 1);
+                }
+            return 0;
+
+        }}
+};
+
+Command::Command(std::vector<Token> &t) {
+    if (t.size() > 0) {
+        cmd_name = t.front().value;
+        params = {t.begin() + 1, t.end()};
+        set_background_mode();
+        set_redirected_files();
+    }
 }
 
 void Command::execute(Shell *shell) {
-    std::map<std::string, std::function<int(std::vector<Token>)>> internal_functions = {
-            {std::string("merrno"),  [](std::vector<Token> params) { return 0; }},
-            {std::string("mpwd"),    [](std::vector<Token> params) { return 0; }},
-            {std::string("mcd"),     [](std::vector<Token> params) { return 0; }},
-            {std::string("mexit"),   [](std::vector<Token> params) {
-                for (auto &token: params)
-                    if (token.value == "-h" || token.value == "--help") {
-                        printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
-                        return 0;
-                    }
-                if (!params.empty())
-                    exit(std::stoi(params.front().value));
-                exit(0);
-            }},
-            {std::string("mecho"),   [](std::vector<Token> params) {
-                for (auto &token: params)
-                    printw("%s ", token.value.c_str());
-                return 0;
-            }},
-            {std::string("mexport"), [](std::vector<Token> params) {
-                for (auto &token: params)
-                    if (token.value == "-h" || token.value == "--help") {
-                        printw("\nmexport [VAR=VAL] [-h|--help]\n\nSets global environmental variable.");
-                        return 0;
-                    }
-                for (auto &token: params)
-                    if (token.type == TokenType::AddVar) {
-                        setenv(token.value.substr(0, token.value.find('=')).c_str(),
-                               token.value.substr(token.value.find('=') + 1,
-                                                  token.value.size() - token.value.find(('=')) - 1).c_str(), 1);
-                        // TODO add to local shell variables
-//                            local_variables[token.value.substr(0, token.value.find('='))] =
-//                                    token.value.substr(token.value.find('=') + 1, token.value.size() - token.value.find(('=')) - 1);
-                    }
-                return 0;
-
-            }}
-    };
-
-    auto cmd_name = tokens.front().value;
-    tokens.erase(tokens.begin());
     if (internal_functions.find(cmd_name) != internal_functions.end())
-        internal_functions[cmd_name](tokens);
+        internal_functions[cmd_name](params);
 
+    //TODO: write fork-exec
     addch('\n');
-    for (auto &token: tokens) {
+    for (auto &token: params) {
         printw("_%s_ ", token.value.c_str());
     }
     addch('\n');
 }
 
 void Command::set_redirected_files() {
-    for (size_t i = 0; i < tokens.size(); i++) {
-        if (tokens[i].type == TokenType::Redirection) {
-            if (is_with_symbol(tokens[i].value, '&')) {
-                if (tokens[i].value[tokens[i].value.find('&') + 1] == '1') {
+    for (size_t i = 0; i < params.size(); i++) {
+        if (params[i].type == TokenType::Redirection) {
+            if (is_with_symbol(params[i].value, '&')) {
+                if (params[i].value[params[i].value.find('&') + 1] == '1') {
                     output_file = error_file;
                 } else {
                     error_file = output_file;
                 }
-                tokens.erase(tokens.begin() + i-- + 1);
+                params.erase(params.begin() + i-- + 1);
             } else {
-                switch (tokens[i].value[0]) {
+                switch (params[i].value[0]) {
                     case '1':
                     case '>':
-                        output_file = tokens[i + 1].value;
+                        output_file = params[i + 1].value;
                         break;
                     case '2':
-                        error_file = tokens[i + 1].value;
+                        error_file = params[i + 1].value;
                         break;
                     case '<':
-                        input_file = tokens[i + 1].value;
+                        input_file = params[i + 1].value;
                 }
-                tokens.erase(tokens.begin() + i + 1, tokens.begin() + i + 3);
+                params.erase(params.begin() + i + 1, params.begin() + i + 3);
                 i -= 2;
             }
         }
@@ -93,8 +96,8 @@ void Command::set_redirected_files() {
 }
 
 void Command::set_background_mode() {
-    if (tokens[tokens.size() - 1].type == TokenType::BackgroundType) {
+    if (params[params.size() - 1].type == TokenType::BackgroundType) {
         is_background = true;
-        tokens.erase(tokens.end() - 1);
+        params.erase(params.end() - 1);
     }
 }
