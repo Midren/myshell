@@ -1,5 +1,5 @@
 #include "Command.h"
-
+#include <unistd.h>
 #include <cstdlib>
 #include <map>
 #include <curses.h>
@@ -7,11 +7,13 @@
 
 #include "util.h"
 
-std::map<std::string, std::function<int(std::vector<Token>)>> Command::internal_functions = {
-        {std::string("merrno"),  [](std::vector<Token> params) { return 0; }},
-        {std::string("mpwd"),    [](std::vector<Token> params) { return 0; }},
-        {std::string("mcd"),     [](std::vector<Token> params) { return 0; }},
-        {std::string("mexit"),   [](std::vector<Token> params) {
+std::map<std::string, std::function<int(std::vector<Token>,Shell*)>> Command::internal_functions = {
+        {std::string("merrno"),  [](std::vector<Token> params, Shell* shell) { return 0; }},
+        {std::string("mpwd"),    [](std::vector<Token> params, Shell* shell) {
+            printw("%s\n", shell->pwd.c_str());
+            return 0;}},
+        {std::string("mcd"),     [](std::vector<Token> params, Shell* shell) { return 0; }},
+        {std::string("mexit"),   [](std::vector<Token> params, Shell* shell) {
             if (!params.empty()) {
                 for (auto &token: params)
                     if (token.value == "-h" || token.value == "--help") {
@@ -22,12 +24,12 @@ std::map<std::string, std::function<int(std::vector<Token>)>> Command::internal_
             }
             exit(0);
         }},
-        {std::string("mecho"),   [](std::vector<Token> params) {
+        {std::string("mecho"),   [](std::vector<Token> params, Shell* shell) {
             for (auto &token: params)
                 printw("%s ", token.value.c_str());
             return 0;
         }},
-        {std::string("mexport"), [](std::vector<Token> params) {
+        {std::string("mexport"), [](std::vector<Token> params, Shell* shell) {
             for (auto &token: params)
                 if (token.value == "-h" || token.value == "--help") {
                     printw("\nmexport [VAR=VAL] [-h|--help]\n\nSets global environmental variable.");
@@ -58,7 +60,7 @@ Command::Command(std::vector<Token> &t) {
 
 void Command::execute(Shell *shell) {
     if (internal_functions.find(cmd_name) != internal_functions.end())
-        internal_functions[cmd_name](params);
+        internal_functions[cmd_name](params, shell);
 
     //TODO: write fork-exec
     addch('\n');

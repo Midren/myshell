@@ -100,7 +100,6 @@ void Shell::start() {
                     delch();
                     max_x--;
                 }
-
                 break;
             default:
                 insch(c);

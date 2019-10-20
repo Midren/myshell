@@ -27,7 +27,7 @@ private:
     std::string error_file;
     std::string cmd_name;
     std::vector<Token> params;
-    static std::map<std::string, std::function<int(std::vector<Token>)>> internal_functions;
+    static std::map<std::string, std::function<int(std::vector<Token>,Shell*)>> internal_functions;
 };
 
 
