@@ -19,7 +19,9 @@ std::map<std::string, std::function<int(std::vector<Token>, Shell *)>> Command::
         {std::string("mcd"),     [](std::vector<Token> params, Shell *shell) {
             if (stat(params[0].value.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
                 chdir(params[0].value.c_str());
-                shell->pwd = get_current_dir_name();
+                char *buffer = new char[PATH_MAX];
+                auto cwd = getcwd(buffer, PATH_MAX);
+                shell->pwd = cwd;
             } else
                 printw("%s is not a directory!", params[0].value.c_str());
             return 0;
