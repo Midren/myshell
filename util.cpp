@@ -3,8 +3,8 @@
 
 bool is_with_symbol(const std::string &str, char sym) {
     //TODO: Add check for escape symbol (\", \' \=)
-    for (auto &c: str)
-        if (c == sym)
+    for (size_t i = 0; i < str.size(); i++)
+        if (str[i] == sym && (i == 0 || str[i - 1] != '\\'))
             return true;
     return false;
 }
@@ -67,9 +67,15 @@ std::string join(const std::vector<std::string> &array, const char separator) {
     return result;
 }
 
-std::string parse_wic(std::string data) {
+#define PATH_SEPARATOR '/'
+
+void parse_path(std::string &path) {
+
+}
+
+std::string replace_wildcards(std::string data) {
     std::string path, pattern;
-    if (is_with_symbol(data, '/')) {
+    if (data[0] == PATH_SEPARATOR) {
         size_t path_end = data.find_last_of('/');
         path = data.substr(0, path_end + 1);
         pattern = data.substr(path_end + 1, data.length() - 1);
@@ -81,7 +87,7 @@ std::string parse_wic(std::string data) {
     DIR *dp;
     struct dirent *ep;
     dp = opendir(path.c_str());
-    if (dp != NULL) {
+    if (dp != nullptr) {
         while ((ep = readdir(dp))) {
             if (matches(ep->d_name, pattern)) {
                 files.emplace_back(ep->d_name);
