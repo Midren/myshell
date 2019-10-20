@@ -16,25 +16,26 @@ std::map<std::string, std::function<int(std::vector<Token>, Shell *)>> Command::
             printw("%s\n", shell->pwd.c_str());
             return 0;
         }},
-            {std::string("mcd"),     [](std::vector<Token> params, Shell *shell) {
-                if (stat(params[0].value.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
-                    chdir(params[0].value.c_str());
-                    shell->pwd = get_current_dir_name();
-                } else
-                    printw("%s is not a directory!", params[0].value.c_str());
-                return 0;
-            }},
-        {std::string("mexit"),   [](std::vector<Token> params, Shell *shell) {
-                for (auto &token: params)
-                    if (token.value == "-h" || token.value == "--help") {
-                        printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
-                        return 0;
-                    }
-                // TODO HERE NORMAL EXIT WITH DESTRUCTOR CALLS PLEZA
-                exit(std::stoi(params.front().value));
-            }
+        {std::string("mcd"),     [](std::vector<Token> params, Shell *shell) {
+            if (stat(params[0].value.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
+                chdir(params[0].value.c_str());
+                shell->pwd = get_current_dir_name();
+            } else
+                printw("%s is not a directory!", params[0].value.c_str());
+            return 0;
         }},
+        {std::string("mexit"),   [](std::vector<Token> params, Shell *shell) {
+            for (auto &token: params)
+                if (token.value == "-h" || token.value == "--help") {
+                    printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
+                    return 0;
+                }
+            // TODO HERE NORMAL EXIT WITH DESTRUCTOR CALLS PLEZA
+            if (!params.empty())
+                exit(std::stoi(params.front().value));
             exit(0);
+        }
+        },
         {std::string("mecho"),   [](std::vector<Token> params, Shell *shell) {
             for (auto &token: params)
                 printw("%s ", token.value.c_str());
@@ -51,16 +52,16 @@ std::map<std::string, std::function<int(std::vector<Token>, Shell *)>> Command::
                     setenv(token.value.substr(0, token.value.find('=')).c_str(),
                            token.value.substr(token.value.find('=') + 1,
                                               token.value.size() - token.value.find(('=')) - 1).c_str(), 1);
-                        shell->local_variables[token.value.substr(0, token.value.find('='))] =
-                                token.value.substr(token.value.find('=') + 1,
-                                                   token.value.size() - token.value.find(('=')) - 1);
-                    } else {
-                        if (shell->local_variables.find(token.value) != shell->local_variables.end())
-                            setenv(token.value.c_str(), shell->local_variables[token.value].c_str(), 1);
-                        else
-                            printw("%s is not defined!\n", token.value.c_str());
-                    }
-                return 0;
+                    shell->local_variables[token.value.substr(0, token.value.find('='))] =
+                            token.value.substr(token.value.find('=') + 1,
+                                               token.value.size() - token.value.find(('=')) - 1);
+                } else {
+                    if (shell->local_variables.find(token.value) != shell->local_variables.end())
+                        setenv(token.value.c_str(), shell->local_variables[token.value].c_str(), 1);
+                    else
+                        printw("%s is not defined!\n", token.value.c_str());
+                }
+            return 0;
 
         }}
 };
