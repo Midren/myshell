@@ -11,7 +11,7 @@ Command::Command(std::vector<Token> &t) : tokens(t) {
     set_redirected_files();
 }
 
-void Command::execute() {
+void Command::execute(Shell *shell) {
     std::map<std::string, std::function<int(std::vector<Token>)>> internal_functions = {
             {std::string("merrno"),  [](std::vector<Token> params) { return 0; }},
             {std::string("mpwd"),    [](std::vector<Token> params) { return 0; }},
