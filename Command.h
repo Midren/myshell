@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <string>
+#include <functional>
+#include <curses.h>
 
 #include "Token.h"
 #include "Shell.h"
@@ -23,7 +25,9 @@ private:
     std::string input_file;
     std::string output_file;
     std::string error_file;
-    std::vector<Token> tokens;
+    std::string cmd_name;
+    std::vector<Token> params;
+    static std::map<std::string, std::function<int(std::vector<Token>,Shell*)>> internal_functions;
 };
 
 

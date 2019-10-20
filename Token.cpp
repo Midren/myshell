@@ -16,7 +16,7 @@ Token::Token(std::string &data, TokenType t) : value(data), type(t) {
             break;
         default:
             if (data.find_first_of("*?[") != std::string::npos)
-                value = parse_wic(data);
+                value = replace_wildcards(data);
             break;
     }
 }

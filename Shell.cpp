@@ -101,7 +101,6 @@ void Shell::start() {
                     delch();
                     max_x--;
                 }
-
                 break;
             default:
                 insch(c);
@@ -133,6 +132,7 @@ void Shell::execute(std::string line) {
                                            token.value.size() - token.value.find(('=')) - 1);
             } else if (token.type == TokenType::Var) {
                 token.value = local_variables[token.value.substr(1, token.value.length() - 1)];
+                token.type = TokenType::CmdWord;
             } else if (token.type == TokenType::CmdDoubleQuoteWord) {
                 std::string new_val;
                 size_t last = 0;
@@ -196,7 +196,6 @@ std::vector<Token> parse(const std::string &line) {
         }
     }
 
-    return
-            tokens;
+    return tokens;
 }
 
