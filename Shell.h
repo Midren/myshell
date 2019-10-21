@@ -20,6 +20,7 @@ private:
     std::map<std::string, std::string> local_variables;
     std::list<std::string> history;
     std::string pwd;
+    ssize_t error_code = 0;
 };
 
 

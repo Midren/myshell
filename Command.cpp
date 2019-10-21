@@ -11,19 +11,24 @@
 
 struct stat sb; // For cd;
 std::map<std::string, std::function<int(std::vector<Token>, Shell *)>> Command::internal_functions = {
-        {std::string("merrno"),  [](std::vector<Token> params, Shell *shell) { return 0; }},
+        //TODO: Write params check
+        {std::string("merrno"),  [](std::vector<Token> params, Shell *shell) {
+            printw("%d", shell->error_code);
+            return 0;
+        }},
         {std::string("mpwd"),    [](std::vector<Token> params, Shell *shell) {
             printw("%s\n", shell->pwd.c_str());
             return 0;
         }},
         {std::string("mcd"),     [](std::vector<Token> params, Shell *shell) {
-            if (stat(params[0].value.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
-                chdir(params[0].value.c_str());
+            ssize_t result = chdir(params[0].value.c_str());
+            if (result != -1) {
                 char *buffer = new char[PATH_MAX];
                 auto cwd = getcwd(buffer, PATH_MAX);
                 shell->pwd = cwd;
-            } else
-                printw("%s is not a directory!", params[0].value.c_str());
+            } else {
+                shell->error_code = errno;
+            }
             return 0;
         }},
         {std::string("mexit"),   [](std::vector<Token> params, Shell *shell) {
