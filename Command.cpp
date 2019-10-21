@@ -8,7 +8,6 @@
 
 #include "util.h"
 #include <sys/stat.h>
-#include <wait.h>
 #include <cstring>
 
 struct stat sb; // For cd;
@@ -98,11 +97,11 @@ void Command::execute(Shell *shell) {
     pid_t pid;
     int status;
     if ((pid = fork()) < 0) {
-        printw("sdasdfasdf");
+        printw("failed\n");
         std::cerr << "Failed to fork" << std::endl;
         shell->error_code = -1;
     } else if (pid > 0) {
-        printw("sdasdfasdf");
+        printw("parent\n");
 //        if (this->is_background) {
         if ((pid = waitpid(pid, &status, 0)) < 0) {
             std::cerr << "waitpid error" << std::endl;
@@ -112,16 +111,23 @@ void Command::execute(Shell *shell) {
 //        } else
 //            printw("[1] %i", pid);
     } else {
-        printw("sdasdfasdf");
-        char **argv = new char *[params.size()];
-        for (size_t i = 0; i < params.size(); i++) {
-            argv[i] = new char[params[i].value.size()];
-            strcpy(argv[i], params[i].value.c_str());
+        printw("child\n");
+        size_t size = params.size() + 2;
+        char **argv = new char *[size];
+        argv[0] = new char[sizeof(cmd_name.c_str())];
+        strcpy(argv[0], cmd_name.c_str());
+        printw("%s\n", argv[0]);
+        for (size_t i = 1; i < params.size() + 1; i++) {
+            argv[i] = new char[params[i - 1].value.size()];
+            strcpy(argv[i], params[i - 1].value.c_str());
         }
-        for (size_t i = 0; i < params.size(); i++) {
+        for (size_t i = 0; i < params.size() + 1; i++) {
             std::cout << argv[i] << " ";
         }
-        execvp(cmd_name.c_str(), argv);
+        execvp(argv[0], argv);
+        for(size_t i = 0; i < (params.size() + 1);i++)
+            delete [] argv[i];
+        delete [] argv;
     }
 }
 
