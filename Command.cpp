@@ -3,14 +3,15 @@
 #include <cstdlib>
 #include <map>
 #include <curses.h>
-#include <unistd.h>
 #include <iostream>
 
 #include "util.h"
 #include <sys/stat.h>
 #include <cstring>
 
-struct stat sb; // For cd;
+#include <unistd.h>
+#include <wait.h>
+
 std::map<std::string, std::function<int(std::vector<Token>, Shell *)>> Command::internal_functions = {
         //TODO: Write params check
         {std::string("merrno"),  [](std::vector<Token> params, Shell *shell) {
@@ -82,52 +83,42 @@ Command::Command(std::vector<Token> &t) {
         set_background_mode();
         set_redirected_files();
     }
+
+    cmd_argv = new char *[params.size() + 2];
+    cmd_argv[0] = new char[sizeof(cmd_name.c_str())];
+    strcpy(cmd_argv[0], cmd_name.c_str());
+    for (size_t i = 1; i < params.size() + 1; i++) {
+        cmd_argv[i] = new char[params[i - 1].value.size()];
+        strcpy(cmd_argv[i], params[i - 1].value.c_str());
+    }
+}
+
+
+Command::~Command() {
+    for (size_t i = 0; i < (params.size() + 1); i++)
+        delete[] cmd_argv[i];
+    delete[] cmd_argv;
 }
 
 void Command::execute(Shell *shell) {
     if (internal_functions.find(cmd_name) != internal_functions.end())
         internal_functions[cmd_name](params, shell);
 
-    printw("\n%s: ", cmd_name.c_str());
-    for (auto &token: params) {
-        printw("_%s_ ", token.value.c_str());
-    }
-    addch('\n');
-
     pid_t pid;
     int status;
     if ((pid = fork()) < 0) {
-        printw("failed\n");
         std::cerr << "Failed to fork" << std::endl;
         shell->error_code = -1;
     } else if (pid > 0) {
-        printw("parent\n");
-//        if (this->is_background) {
+        addstr("parent\n");
         if ((pid = waitpid(pid, &status, 0)) < 0) {
             std::cerr << "waitpid error" << std::endl;
             exit(1);
         }
         shell->error_code = status;
-//        } else
-//            printw("[1] %i", pid);
     } else {
-        printw("child\n");
-        size_t size = params.size() + 2;
-        char **argv = new char *[size];
-        argv[0] = new char[sizeof(cmd_name.c_str())];
-        strcpy(argv[0], cmd_name.c_str());
-        printw("%s\n", argv[0]);
-        for (size_t i = 1; i < params.size() + 1; i++) {
-            argv[i] = new char[params[i - 1].value.size()];
-            strcpy(argv[i], params[i - 1].value.c_str());
-        }
-        for (size_t i = 0; i < params.size() + 1; i++) {
-            std::cout << argv[i] << " ";
-        }
-        execvp(argv[0], argv);
-        for(size_t i = 0; i < (params.size() + 1);i++)
-            delete [] argv[i];
-        delete [] argv;
+        addstr("child\n");
+        execvp(cmd_name.c_str(), cmd_argv);
     }
 }
 

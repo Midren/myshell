@@ -13,6 +13,7 @@ class Command {
 public:
     explicit Command(std::vector<Token> &t);
 
+    ~Command();
 
     void execute(Shell *shell);
 
@@ -25,9 +26,10 @@ private:
     std::string input_file;
     std::string output_file;
     std::string error_file;
-    std::string cmd_name;
     std::vector<Token> params;
-    static std::map<std::string, std::function<int(std::vector<Token>,Shell*)>> internal_functions;
+    std::string cmd_name;
+    char **cmd_argv;
+    static std::map<std::string, std::function<int(std::vector<Token>, Shell *)>> internal_functions;
 };
 
 

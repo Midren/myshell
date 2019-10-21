@@ -77,6 +77,7 @@ void Shell::start() {
                     history.push(line);
                 execute(line);
                 line.clear();
+                std::cout.flush();
                 printw("\n%s $ ", pwd.c_str());
                 start_x = pwd.size() + 3;
                 max_x = start_x;
