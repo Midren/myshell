@@ -8,33 +8,45 @@
 #include <fstream>
 
 #include <unistd.h>
+#include <stack>
 
 #include "Command.h"
 #include "util.h"
 
+#ifdef __APPLE__
+#undef KEY_BACKSPACE
+#define KEY_BACKSPACE 127
+#endif
+
 
 std::vector<Token> parse(const std::string &line);
 
-Shell::Shell() : history{} {
+Shell::Shell() {
     std::ifstream history_file{".history"};
+    std::stack<std::string> read_history;
     std::string command;
     while (getline(history_file, command)) {
-        history.push_front(command);
+        history.emplace(command);
     }
     history_file.close();
     initscr();
     noecho();
     char *buffer = new char[PATH_MAX];
     auto cwd = getcwd(buffer, PATH_MAX);
-    pwd = std::string(cwd);
+    pwd = cwd;
     free(buffer);
 }
 
 Shell::~Shell() {
-    std::ofstream history_file{".history"};
+    std::stack<std::string> history_reversed;
     while (!history.empty()) {
-        history_file << history.back() << std::endl;
-        history.pop_back();
+        history_reversed.push(history.top());
+        history.pop();
+    }
+    std::ofstream history_file{".history"};
+    while (!history_reversed.empty()) {
+        history_file << history_reversed.top() << std::endl;
+        history_reversed.pop();
     }
     history_file.close();
     endwin();
@@ -47,7 +59,8 @@ void Shell::start() {
     wchar_t c;
     int x, y, start_x = pwd.size() + 3;
     int max_x = start_x;
-    auto last_command = history.rbegin();
+    bool new_command = true;
+    std::stack<std::string> previous_commands;
     while (true) {
         c = getch();
         switch (c) {
@@ -56,13 +69,18 @@ void Shell::start() {
             case '\n':
                 getsyx(y, x);
                 mvaddch(y, max_x, '\n');
-                history.push_back(line);
+                while (!previous_commands.empty()) {
+                    history.push(previous_commands.top());
+                    previous_commands.pop();
+                }
+                if (!line.empty())
+                    history.push(line);
                 execute(line);
                 line.clear();
                 printw("\n%s $ ", pwd.c_str());
                 start_x = pwd.size() + 3;
                 max_x = start_x;
-                last_command = history.rbegin();
+                new_command = true;
                 break;
             case KEY_LEFT:
                 getsyx(y, x);
@@ -73,27 +91,42 @@ void Shell::start() {
                 x < max_x ? move(y, x + 1) : move(y, x);;
                 break;
             case KEY_UP:
-                if (last_command != history.rend()) {
+                if (!history.empty()) {
+                    new_command = false;
+                    if (!line.empty())
+                        previous_commands.push(line);
                     getsyx(y, x);
                     move(y, start_x);
                     clrtoeol();
-                    line = *last_command;
+                    line = history.top();
+                    history.pop();
                     printw("%s", line.c_str());
                     max_x = start_x + line.size();
-                    ++last_command;
                 }
                 break;
             case KEY_DOWN:
-                if (--last_command != --history.rbegin()) {
+                if (!previous_commands.empty()) {
+                    if (!line.empty())
+                        history.push(line);
                     getsyx(y, x);
                     move(y, start_x);
                     clrtoeol();
-                    line = *last_command;
+                    line = previous_commands.top();
+                    previous_commands.pop();
                     printw("%s", line.c_str());
                     max_x = start_x + line.size();
-                } else ++last_command;
+                } else if (line.empty())
+                    new_command = true;
                 break;
             case KEY_BACKSPACE:
+                if (!new_command && !line.empty()) {
+                    new_command = true;
+                    history.push(line);
+                    while (!previous_commands.empty()) {
+                        history.push(previous_commands.top());
+                        previous_commands.pop();
+                    }
+                }
                 getsyx(y, x);
                 if (x > start_x) {
                     line.pop_back();
@@ -103,6 +136,14 @@ void Shell::start() {
                 }
                 break;
             default:
+                if (!new_command && !line.empty()) {
+                    new_command = true;
+                    history.push(line);
+                    while (!previous_commands.empty()) {
+                        history.push(previous_commands.top());
+                        previous_commands.pop();
+                    }
+                }
                 insch(c);
                 getsyx(y, x);
                 move(y, x + 1);

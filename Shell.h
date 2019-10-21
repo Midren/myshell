@@ -2,8 +2,8 @@
 #define MYSHELL_SHELL_H
 
 #include <map>
-#include <list>
 #include <string>
+#include <stack>
 
 class Shell {
 public:
@@ -18,7 +18,7 @@ public:
 private:
     friend class Command;
     std::map<std::string, std::string> local_variables;
-    std::list<std::string> history;
+    std::stack<std::string> history;
     std::string pwd;
 };
 
