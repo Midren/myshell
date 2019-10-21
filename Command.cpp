@@ -8,6 +8,8 @@
 
 #include "util.h"
 #include <sys/stat.h>
+#include <wait.h>
+#include <cstring>
 
 struct stat sb; // For cd;
 std::map<std::string, std::function<int(std::vector<Token>, Shell *)>> Command::internal_functions = {
@@ -37,13 +39,14 @@ std::map<std::string, std::function<int(std::vector<Token>, Shell *)>> Command::
                     printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
                     return 0;
                 }
-            // TODO HERE NORMAL EXIT WITH DESTRUCTOR CALLS PLEZA
+            shell->error_code = 0;
             if (!params.empty())
                 exit(std::stoi(params.front().value));
             exit(0);
         }
         },
         {std::string("mecho"),   [](std::vector<Token> params, Shell *shell) {
+            shell->error_code = 0;
             for (auto &token: params)
                 printw("%s ", token.value.c_str());
             return 0;
@@ -87,11 +90,39 @@ void Command::execute(Shell *shell) {
         internal_functions[cmd_name](params, shell);
 
     printw("\n%s: ", cmd_name.c_str());
-    //TODO: write fork-exec
     for (auto &token: params) {
         printw("_%s_ ", token.value.c_str());
     }
     addch('\n');
+
+    pid_t pid;
+    int status;
+    if ((pid = fork()) < 0) {
+        printw("sdasdfasdf");
+        std::cerr << "Failed to fork" << std::endl;
+        shell->error_code = -1;
+    } else if (pid > 0) {
+        printw("sdasdfasdf");
+//        if (this->is_background) {
+        if ((pid = waitpid(pid, &status, 0)) < 0) {
+            std::cerr << "waitpid error" << std::endl;
+            exit(1);
+        }
+        shell->error_code = status;
+//        } else
+//            printw("[1] %i", pid);
+    } else {
+        printw("sdasdfasdf");
+        char **argv = new char *[params.size()];
+        for (size_t i = 0; i < params.size(); i++) {
+            argv[i] = new char[params[i].value.size()];
+            strcpy(argv[i], params[i].value.c_str());
+        }
+        for (size_t i = 0; i < params.size(); i++) {
+            std::cout << argv[i] << " ";
+        }
+        execvp(cmd_name.c_str(), argv);
+    }
 }
 
 void Command::set_redirected_files() {
