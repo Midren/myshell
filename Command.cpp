@@ -9,7 +9,7 @@
 #include <cstring>
 
 #include <unistd.h>
-#include <wait.h>
+//#include <wait.h>
 
 std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Command::internal_functions = {
         {std::string("merrno"),  [](int argc, char **argv, Shell *shell) {
@@ -44,6 +44,10 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
                 shell->pwd = cwd;
             } else {
                 shell->error_code = errno;
+                if(shell->error_code == EACCES)
+                    printw("Permission is denied for any component of the pathname");
+                else if(shell->error_code == ENOENT)
+                    printw("A component of path does not name an existing directory or path is an empty string");
             }
             return 0;
         }},
