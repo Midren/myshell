@@ -18,10 +18,13 @@
 #define KEY_BACKSPACE 127
 #endif
 
+extern char **environ;
 
 std::vector<Token> parse(const std::string &line);
 
+
 Shell::Shell() {
+    get_env_vars(environ);
     std::ifstream history_file{".history"};
     std::stack<std::string> read_history;
     std::string command;
@@ -208,6 +211,23 @@ void Shell::execute(std::string line) {
 
     std::for_each(commands.begin(), commands.end(),
                   std::bind(std::mem_fn(&Command::execute), std::placeholders::_1, this));
+}
+
+void Shell::get_env_vars(char **environ) {
+    char **p;
+    char *e;
+    int ind;
+    char *name;
+    char *value;
+    for (p = environ; *p; p++) {
+        e = strchr(*p, '=');
+        ind = (int)(e - *p);
+        name = new char[ind + 1];
+        value = new char[strlen(*p) - ind];
+        strncpy(name, *p, ind);
+        strcpy(value, e + 1);
+        local_variables[name] = value;
+    }
 }
 
 std::vector<Token> parse(const std::string &line) {
