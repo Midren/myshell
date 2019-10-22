@@ -1,5 +1,7 @@
 #include "util.h"
 #include <dirent.h>
+#include <libgen.h>
+#include <cstring>
 
 bool is_with_symbol(const std::string &str, char sym) {
     //TODO: Add check for escape symbol (\", \' \=)
@@ -9,9 +11,9 @@ bool is_with_symbol(const std::string &str, char sym) {
     return false;
 }
 
-bool matches(std::string text, std::string pattern) {
-    int n = text.size();
-    int m = pattern.size();
+bool matches(char *text, char *pattern) {
+    int n = strlen(text);
+    int m = strlen(pattern);
     bool found = false;
     if (m == 0)
         return (n == 0);
@@ -74,19 +76,14 @@ void parse_path(std::string &path) {
 }
 
 std::vector<Token> replace_wildcards(std::string data) {
-    std::string path, pattern;
-    if (data[0] == PATH_SEPARATOR) {
-        size_t path_end = data.find_last_of('/');
-        path = data.substr(0, path_end + 1);
-        pattern = data.substr(path_end + 1, data.length() - 1);
-    } else {
-        path = "./";
-        pattern = data;
-    }
+    char *path, *pattern;
+    char *str = strdup(data.c_str());
+    path = dirname(str);
+    pattern = basename(str);
     std::vector<Token> files;
     DIR *dp;
     struct dirent *ep;
-    dp = opendir(path.c_str());
+    dp = opendir(path);
     if (dp != nullptr) {
         while ((ep = readdir(dp))) {
             if (matches(ep->d_name, pattern)) {

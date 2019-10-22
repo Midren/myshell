@@ -28,7 +28,7 @@ std::vector<std::vector<T>> split(std::vector<T> &container, std::function<bool(
 }
 
 
-bool matches(std::string text, std::string pattern);
+bool matches(char* text, char* pattern);
 
 std::string join(const std::vector<std::string> &array, char separator);
 
