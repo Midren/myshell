@@ -118,11 +118,11 @@ Command::~Command() {
 }
 
 void Command::execute(Shell *shell) {
-//    addch('\n');
-//    for(int i = 0; i < cmd_argc; i++) {
-//        printw("%s ", cmd_argv[i]);
-//    }
-//    addch('\n');
+    addch('\n');
+    for(int i = 0; i < cmd_argc; i++) {
+        printw("%s ", cmd_argv[i]);
+    }
+    addch('\n');
     if (internal_functions.find(cmd_name) != internal_functions.end())
         internal_functions[cmd_name](cmd_argc, cmd_argv, shell);
     else {

@@ -5,12 +5,15 @@
 #include "util.h"
 
 Token::Token(std::string data, TokenType t) : value(std::move(data)), type(t) {
+    size_t sep;
     switch (type) {
         case CmdQuoteWord:
-            value = value.substr(1, value.length() - 2);
+            sep = value.find('\'');
+            value = value.substr(0, sep) + value.substr(sep + 1, value.length() - 2 - sep);
             break;
         case CmdDoubleQuoteWord:
-            value = value.substr(1, value.length() - 2);
+            sep = value.find('\"');
+            value = value.substr(0, sep) + value.substr(sep + 1, value.length() - 2 - sep);
             break;
         case Var:
         case InlineCmd:
