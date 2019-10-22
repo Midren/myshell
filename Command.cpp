@@ -13,10 +13,26 @@
 
 std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Command::internal_functions = {
         {std::string("merrno"),  [](int argc, char **argv, Shell *shell) {
+            for (int i = 1; i < argc; i++) {
+                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
+                    printw("merrno [-h|--help] – show error code of last command");
+                } else {
+                    shell->error_code = 1;
+                }
+            }
+            shell->error_code = 0;
             printw("%d", shell->error_code);
             return 0;
         }},
         {std::string("mpwd"),    [](int argc, char **argv, Shell *shell) {
+            for (int i = 1; i < argc; i++) {
+                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
+                    printw("mpwd [-h|--help] – show current directory");
+                } else {
+                    shell->error_code = 1;
+                }
+            }
+            shell->error_code = 0;
             printw("%s\n", shell->pwd.c_str());
             return 0;
         }},
