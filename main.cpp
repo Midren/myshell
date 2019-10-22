@@ -1,7 +1,8 @@
 #include "Shell.h"
 
+auto shell = Shell();
+
 int main() {
-    auto shell = Shell();
     shell.start();
     return 0;
 }

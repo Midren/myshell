@@ -14,10 +14,12 @@
 std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Command::internal_functions = {
         {std::string("merrno"),  [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
-                    printw("merrno [-h|--help] – show error code of last command");
+                if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
+                    printw("merrno [-h|--help] -- show error code of last command\n");
+                    return 0;
                 } else {
                     shell->error_code = 1;
+                    return 1;
                 }
             }
             shell->error_code = 0;
@@ -26,8 +28,9 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         }},
         {std::string("mpwd"),    [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
-                    printw("mpwd [-h|--help] – show current directory");
+                if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
+                    printw("\nmpwd [-h|--help] -- show current directory\n");
+                    return 0;
                 } else {
                     shell->error_code = 1;
                 }
@@ -37,6 +40,14 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
             return 0;
         }},
         {std::string("mcd"),     [](int argc, char **argv, Shell *shell) {
+            for (int i = 1; i < argc; i++) {
+                if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
+                    printw("\nmcd <path> [-h|--help]  -- Go to path <path>\n");
+                    shell->error_code = 0;
+                    return 0;
+                } else
+                    shell->error_code = 1;
+            }
             ssize_t result = chdir(argv[1]);
             if (result != -1) {
                 char *buffer = new char[PATH_MAX];
@@ -44,15 +55,20 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
                 shell->pwd = cwd;
             } else {
                 shell->error_code = errno;
+                if (shell->error_code == EACCES)
+                    printw("Permission is denied for any component of the pathname\n");
+                else if (shell->error_code == ENOENT)
+                    printw("A component of path does not name an existing directory or path is an empty string\n");
             }
             return 0;
         }},
         {std::string("mexit"),   [](int argc, char **argv, Shell *shell) {
-            for (int i = 1; i < argc; i++)
-                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
-                    printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
+            for (int i = 1; i < argc; i++) {
+                if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
+                    printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0\n");
                     return 0;
                 }
+            }
             shell->error_code = 0;
             if (argc > 1)
                 exit(std::stoi(argv[1]));
@@ -64,13 +80,9 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
             for (int i = 1; i < argc; i++)
                 printw("%s ", argv[i]);
             return 0;
-        }},
+        }
+        },
         {std::string("mexport"), [](int argc, char **argv, Shell *shell) {
-            for (int i = 1; i < argc; i++)
-                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
-                    printw("\nmexport [VAR=VAL] [-h|--help]\n\nSets global environmental variable.");
-                    return 0;
-                }
             for (int i = 1; i < argc; i++) {
                 std::string addVarToken(argv[i]);
                 if (addVarToken.find('=') != std::string::npos) {
@@ -118,6 +130,11 @@ Command::~Command() {
 }
 
 void Command::execute(Shell *shell) {
+    addch('\n');
+    for(int i = 0; i < cmd_argc; i++) {
+        printw("%s ", cmd_argv[i]);
+    }
+    addch('\n');
     if (internal_functions.find(cmd_name) != internal_functions.end())
         internal_functions[cmd_name](cmd_argc, cmd_argv, shell);
     else {

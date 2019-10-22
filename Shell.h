@@ -21,6 +21,7 @@ private:
     std::stack<std::string> history;
     std::string pwd;
     ssize_t error_code = 0;
+    void get_env_vars(char **environ);
 };
 
 
