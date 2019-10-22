@@ -9,7 +9,7 @@
 #include <cstring>
 
 #include <unistd.h>
-//#include <wait.h>
+#include <wait.h>
 
 std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Command::internal_functions = {
         {std::string("merrno"),  [](int argc, char **argv, Shell *shell) {
