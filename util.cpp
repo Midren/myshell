@@ -73,7 +73,7 @@ void parse_path(std::string &path) {
 
 }
 
-std::string replace_wildcards(std::string data) {
+std::vector<Token> replace_wildcards(std::string data) {
     std::string path, pattern;
     if (data[0] == PATH_SEPARATOR) {
         size_t path_end = data.find_last_of('/');
@@ -83,16 +83,16 @@ std::string replace_wildcards(std::string data) {
         path = "./";
         pattern = data;
     }
-    std::vector<std::string> files;
+    std::vector<Token> files;
     DIR *dp;
     struct dirent *ep;
     dp = opendir(path.c_str());
     if (dp != nullptr) {
         while ((ep = readdir(dp))) {
             if (matches(ep->d_name, pattern)) {
-                files.emplace_back(ep->d_name);
+                files.emplace_back(ep->d_name, TokenType::CmdWord);
             }
         }
     }
-    return join(files, ' ');
+    return files;
 }

@@ -7,7 +7,9 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-std::string replace_wildcards(std::string data);
+#include "Token.h"
+
+std::vector<Token> replace_wildcards(std::string data);
 
 bool is_with_symbol(const std::string &str, char sym);
 
