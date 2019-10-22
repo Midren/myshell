@@ -14,10 +14,13 @@
 std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Command::internal_functions = {
         {std::string("merrno"),  [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
-                    printw("\nmerrno [-h|--help] – show error code of last command");
-                } else
+                if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
+                    printw("merrno [-h|--help] -- show error code of last command");
+                    return 0;
+                } else {
                     shell->error_code = 1;
+                    return 1;
+                }
             }
             shell->error_code = 0;
             printw("%d", shell->error_code);
@@ -25,10 +28,12 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         }},
         {std::string("mpwd"),    [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
-                    printw("\nmpwd [-h|--help] – show current directory");
-                } else
+                if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
+                    printw("\nmpwd [-h|--help] -- show current directory");
+                    return 0;
+                } else {
                     shell->error_code = 1;
+                }
             }
             shell->error_code = 0;
             printw("%s\n", shell->pwd.c_str());
@@ -36,8 +41,10 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         }},
         {std::string("mcd"),     [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
+                if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
                     printw("\nmcd <path> [-h|--help]  -- Go to path <path>");
+                    shell->error_code = 0;
+                    return 0;
                 } else
                     shell->error_code = 1;
             }
@@ -57,11 +64,10 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         }},
         {std::string("mexit"),   [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
+                if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
                     printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
                     return 0;
-                } else
-                    shell->error_code = 1;
+                }
             }
             shell->error_code = 0;
             if (argc > 1)
@@ -70,26 +76,13 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         }
         },
         {std::string("mecho"),   [](int argc, char **argv, Shell *shell) {
-            for (int i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
-                    printw("\nmecho [text|$<var_name>] [text|$<var_name>]  [text|$<var_name>] ...");
-                    return 0;
-                } else
-                    shell->error_code = 1;
-            }
             shell->error_code = 0;
             for (int i = 1; i < argc; i++)
                 printw("%s ", argv[i]);
             return 0;
-        }},
+        }
+        },
         {std::string("mexport"), [](int argc, char **argv, Shell *shell) {
-            for (int i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
-                    printw("\nmexport [VAR=VAL] [-h|--help]\n\nSets global environmental variable.");
-                    return 0;
-                } else
-                    shell->error_code = 1;
-            }
             for (int i = 1; i < argc; i++) {
                 std::string addVarToken(argv[i]);
                 if (addVarToken.find('=') != std::string::npos) {
