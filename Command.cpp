@@ -15,7 +15,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         {std::string("merrno"),  [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
-                    printw("merrno [-h|--help] -- show error code of last command");
+                    printw("\nmerrno [-h|--help] -- show error code of last command");
                     return 0;
                 } else {
                     shell->error_code = 1;
@@ -28,7 +28,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         }},
         {std::string("mpwd"),    [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
+                if ((strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) && argv[i][0] == '-') {
                     printw("\nmpwd [-h|--help] -- show current directory");
                     return 0;
                 } else {
@@ -41,7 +41,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         }},
         {std::string("mcd"),     [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
+                if ((strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) && argv[i][0] == '-') {
                     printw("\nmcd <path> [-h|--help]  -- Go to path <path>");
                     shell->error_code = 0;
                     return 0;
@@ -64,7 +64,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         }},
         {std::string("mexit"),   [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
-                if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
+                if ((strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) && argv[i][0] == '-') {
                     printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
                     return 0;
                 }
