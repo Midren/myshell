@@ -137,6 +137,9 @@ void Shell::start() {
                     max_x--;
                 }
                 break;
+            case KEY_RESIZE:
+                refresh();
+                break;
             default:
                 if (!new_command && !line.empty()) {
                     new_command = true;
