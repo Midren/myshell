@@ -130,7 +130,8 @@ void Shell::start() {
                 }
                 getsyx(y, x);
                 if (x > start_x) {
-                    line.pop_back();
+                    line.erase(x - start_x - 1, 1);
+                    move(y, start_x);
                     move(y, x - 1);
                     delch();
                     max_x--;
