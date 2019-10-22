@@ -15,7 +15,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         {std::string("merrno"),  [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
-                    printw("merrno [-h|--help] -- show error code of last command");
+                    printw("merrno [-h|--help] -- show error code of last command\n");
                     return 0;
                 } else {
                     shell->error_code = 1;
@@ -29,7 +29,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         {std::string("mpwd"),    [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
-                    printw("\nmpwd [-h|--help] -- show current directory");
+                    printw("\nmpwd [-h|--help] -- show current directory\n");
                     return 0;
                 } else {
                     shell->error_code = 1;
@@ -42,7 +42,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         {std::string("mcd"),     [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
-                    printw("\nmcd <path> [-h|--help]  -- Go to path <path>");
+                    printw("\nmcd <path> [-h|--help]  -- Go to path <path>\n");
                     shell->error_code = 0;
                     return 0;
                 } else
@@ -56,16 +56,16 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
             } else {
                 shell->error_code = errno;
                 if (shell->error_code == EACCES)
-                    printw("Permission is denied for any component of the pathname");
+                    printw("Permission is denied for any component of the pathname\n");
                 else if (shell->error_code == ENOENT)
-                    printw("A component of path does not name an existing directory or path is an empty string");
+                    printw("A component of path does not name an existing directory or path is an empty string\n");
             }
             return 0;
         }},
         {std::string("mexit"),   [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
-                    printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
+                    printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0\n");
                     return 0;
                 }
             }
