@@ -31,6 +31,7 @@ Shell::Shell() {
     history_file.close();
     initscr();
     noecho();
+    scrollok(stdscr, true);
     char *buffer = new char[PATH_MAX];
     auto cwd = getcwd(buffer, PATH_MAX);
     pwd = cwd;
@@ -57,8 +58,10 @@ void Shell::start() {
     printw("%s $ ", pwd.c_str());
     std::string line;
     wchar_t c;
-    int x, y, start_x = pwd.size() + 3;
+    int x, y, start_y, start_x = pwd.size() + 3;
+    getsyx(start_y, x);
     int max_x = start_x;
+    int length_of_the_line = getmaxx(stdscr);
     bool new_command = true;
     std::stack<std::string> previous_commands;
     while (true) {
@@ -67,8 +70,9 @@ void Shell::start() {
             case EOF:
                 goto exit;
             case '\n':
-                getsyx(y, x);
-                mvaddch(y, max_x, '\n');
+                move(start_y, start_x);
+                clrtobot();
+                printw("%s\n", line.c_str());
                 while (!previous_commands.empty()) {
                     history.push(previous_commands.top());
                     previous_commands.pop();
@@ -80,25 +84,29 @@ void Shell::start() {
                 std::cout.flush();
                 printw("\n%s $ ", pwd.c_str());
                 start_x = pwd.size() + 3;
-                max_x = start_x;
+                refresh();
+                getsyx(start_y, max_x);
                 new_command = true;
                 break;
             case KEY_LEFT:
                 getsyx(y, x);
-                x > start_x ? move(y, x - 1) : move(y, x);
+                x > start_x || y > start_y
+                ? x > 0 ? move(y, x - 1) : move(y - 1, length_of_the_line - 1)
+                : move(y, x);
                 break;
             case KEY_RIGHT:
                 getsyx(y, x);
-                x < max_x ? move(y, x + 1) : move(y, x);;
+                x + (y - start_y) * length_of_the_line < max_x
+                ? (x == length_of_the_line - 1) ? move(y + 1, 0) : move(y, x + 1)
+                : move(y, x);;
                 break;
             case KEY_UP:
                 if (!history.empty()) {
                     new_command = false;
                     if (!line.empty())
                         previous_commands.push(line);
-                    getsyx(y, x);
-                    move(y, start_x);
-                    clrtoeol();
+                    move(start_y, start_x);
+                    clrtobot();
                     line = history.top();
                     history.pop();
                     printw("%s", line.c_str());
@@ -109,9 +117,8 @@ void Shell::start() {
                 if (!previous_commands.empty()) {
                     if (!line.empty())
                         history.push(line);
-                    getsyx(y, x);
-                    move(y, start_x);
-                    clrtoeol();
+                    move(start_y, start_x);
+                    clrtobot();
                     line = previous_commands.top();
                     previous_commands.pop();
                     printw("%s", line.c_str());
@@ -129,11 +136,15 @@ void Shell::start() {
                     }
                 }
                 getsyx(y, x);
-                if (x > start_x) {
-                    line.erase(x - start_x - 1, 1);
-                    move(y, start_x);
-                    move(y, x - 1);
-                    delch();
+                if (x > start_x || y > start_y) {
+                    line.erase((x + (y - start_y) * length_of_the_line - start_x) - 1, 1);
+                    move(start_y, start_x);
+                    clrtobot();
+                    printw("%s", line.c_str());
+                    if (x == 0)
+                        move(y - 1, length_of_the_line - 1);
+                    else
+                        move(y, x - 1);
                     max_x--;
                 }
                 break;
@@ -141,6 +152,7 @@ void Shell::start() {
                 refresh();
                 break;
             default:
+                getsyx(y, x);
                 if (!new_command && !line.empty()) {
                     new_command = true;
                     history.push(line);
@@ -149,11 +161,13 @@ void Shell::start() {
                         previous_commands.pop();
                     }
                 }
-                insch(c);
-                getsyx(y, x);
-                move(y, x + 1);
-                max_x++;
-                line.insert(line.begin() + x - start_x, c);
+                line.insert(line.begin() + (x + (y - start_y) * length_of_the_line - start_x), c);
+                move(start_y, start_x);
+                clrtobot();
+                printw("%s", line.c_str());
+                (x == length_of_the_line - 1) ? move(y + 1, 0) : move(y, x + 1);
+                ++max_x;
+                break;
         }
         refresh();
     }
