@@ -171,7 +171,9 @@ void Shell::execute(std::string line) {
     std::vector<Command> commands;
 
     for (auto &cmd:token_commands) {
-        for (auto &token:cmd) {
+        for (size_t i = 0; i < cmd.size(); i++) {
+            auto &token = cmd[i];
+//        for (auto &token:cmd) {
             if (token.type == TokenType::AddVar) {
                 local_variables[token.value.substr(0, token.value.find('='))] =
                         token.value.substr(token.value.find('=') + 1,
@@ -195,6 +197,10 @@ void Shell::execute(std::string line) {
                     new_val += token.value.substr(last, token.value.size() - last);
                 token.value = new_val;
                 token.type = TokenType::CmdWord;
+            } else if (token.type == TokenType::CmdWildCard) {
+                auto values = replace_wildcards(token.value);
+                cmd.insert(cmd.begin() + i, values.begin(), values.end());
+                cmd.erase(cmd.begin() + values.size() + i);
             }
         }
         commands.emplace_back(cmd);
@@ -237,6 +243,8 @@ std::vector<Token> parse(const std::string &line) {
             }
         } else if (word[0] == '>' || word[1] == '>' || word[0] == '<') {
             tokens.emplace_back(word, TokenType::Redirection);
+        } else if (word.find_first_of("*?[") != std::string::npos) {
+            tokens.emplace_back(word, TokenType::CmdWildCard);
         } else {
             tokens.emplace_back(word, TokenType::CmdWord);
         }

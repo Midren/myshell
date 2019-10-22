@@ -8,6 +8,7 @@ enum TokenType {
     CmdWord,
     CmdQuoteWord,
     CmdDoubleQuoteWord,
+    CmdWildCard,
     AddVar,
     Var,
     InlineCmd,
@@ -18,7 +19,7 @@ enum TokenType {
 
 struct Token {
 
-    explicit Token(std::string &data, TokenType t);
+    explicit Token(std::string data, TokenType t);
 
     Token(const Token &t) = default;
 
