@@ -6,24 +6,22 @@
 #include <iostream>
 
 #include "util.h"
-#include <sys/stat.h>
 #include <cstring>
 
 #include <unistd.h>
 #include <wait.h>
 
-std::map<std::string, std::function<int(std::vector<Token>, Shell *)>> Command::internal_functions = {
-        //TODO: Write params check
-        {std::string("merrno"),  [](std::vector<Token> params, Shell *shell) {
+std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Command::internal_functions = {
+        {std::string("merrno"),  [](int argc, char **argv, Shell *shell) {
             printw("%d", shell->error_code);
             return 0;
         }},
-        {std::string("mpwd"),    [](std::vector<Token> params, Shell *shell) {
+        {std::string("mpwd"),    [](int argc, char **argv, Shell *shell) {
             printw("%s\n", shell->pwd.c_str());
             return 0;
         }},
-        {std::string("mcd"),     [](std::vector<Token> params, Shell *shell) {
-            ssize_t result = chdir(params[0].value.c_str());
+        {std::string("mcd"),     [](int argc, char **argv, Shell *shell) {
+            ssize_t result = chdir(argv[1]);
             if (result != -1) {
                 char *buffer = new char[PATH_MAX];
                 auto cwd = getcwd(buffer, PATH_MAX);
@@ -33,44 +31,46 @@ std::map<std::string, std::function<int(std::vector<Token>, Shell *)>> Command::
             }
             return 0;
         }},
-        {std::string("mexit"),   [](std::vector<Token> params, Shell *shell) {
-            for (auto &token: params)
-                if (token.value == "-h" || token.value == "--help") {
+        {std::string("mexit"),   [](int argc, char **argv, Shell *shell) {
+            for (int i = 1; i < argc; i++)
+                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
                     printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0");
                     return 0;
                 }
             shell->error_code = 0;
-            if (!params.empty())
-                exit(std::stoi(params.front().value));
+            if (argc > 1)
+                exit(std::stoi(argv[1]));
             exit(0);
         }
         },
-        {std::string("mecho"),   [](std::vector<Token> params, Shell *shell) {
+        {std::string("mecho"),   [](int argc, char **argv, Shell *shell) {
             shell->error_code = 0;
-            for (auto &token: params)
-                printw("%s ", token.value.c_str());
+            for (int i = 1; i < argc; i++)
+                printw("%s ", argv[i]);
             return 0;
         }},
-        {std::string("mexport"), [](std::vector<Token> params, Shell *shell) {
-            for (auto &token: params)
-                if (token.value == "-h" || token.value == "--help") {
+        {std::string("mexport"), [](int argc, char **argv, Shell *shell) {
+            for (int i = 1; i < argc; i++)
+                if (strcmp(argv[i], "-h") || strcmp(argv[1], "--help")) {
                     printw("\nmexport [VAR=VAL] [-h|--help]\n\nSets global environmental variable.");
                     return 0;
                 }
-            for (auto &token: params)
-                if (token.type == TokenType::AddVar) {
-                    setenv(token.value.substr(0, token.value.find('=')).c_str(),
-                           token.value.substr(token.value.find('=') + 1,
-                                              token.value.size() - token.value.find(('=')) - 1).c_str(), 1);
-                    shell->local_variables[token.value.substr(0, token.value.find('='))] =
-                            token.value.substr(token.value.find('=') + 1,
-                                               token.value.size() - token.value.find(('=')) - 1);
+            for (int i = 1; i < argc; i++) {
+                std::string addVarToken(argv[i]);
+                if (addVarToken.find('=') != std::string::npos) {
+                    setenv(addVarToken.substr(0, addVarToken.find('=')).c_str(),
+                           addVarToken.substr(addVarToken.find('=') + 1,
+                                              addVarToken.size() - addVarToken.find(('=')) - 1).c_str(), 1);
+                    shell->local_variables[addVarToken.substr(0, addVarToken.find('='))] =
+                            addVarToken.substr(addVarToken.find('=') + 1,
+                                               addVarToken.size() - addVarToken.find(('=')) - 1);
                 } else {
-                    if (shell->local_variables.find(token.value) != shell->local_variables.end())
-                        setenv(token.value.c_str(), shell->local_variables[token.value].c_str(), 1);
+                    if (shell->local_variables.find(std::string(argv[i])) != shell->local_variables.end())
+                        setenv(argv[i], shell->local_variables[std::string(argv[i])].c_str(), 1);
                     else
-                        printw("%s is not defined!\n", token.value.c_str());
+                        printw("%s is not defined!\n", argv[i]);
                 }
+            }
             return 0;
 
         }}
@@ -79,50 +79,53 @@ std::map<std::string, std::function<int(std::vector<Token>, Shell *)>> Command::
 Command::Command(std::vector<Token> &t) {
     if (!t.empty() && t[0].type != TokenType::AddVar) {
         cmd_name = t.front().value;
-        params = {t.begin() + 1, t.end()};
-        set_background_mode();
-        set_redirected_files();
-    }
+        t.erase(t.begin());
+        set_background_mode(t);
+        set_redirected_files(t);
 
-    cmd_argv = new char *[params.size() + 2];
-    cmd_argv[0] = new char[sizeof(cmd_name.c_str())];
-    strcpy(cmd_argv[0], cmd_name.c_str());
-    for (size_t i = 1; i < params.size() + 1; i++) {
-        cmd_argv[i] = new char[params[i - 1].value.size()];
-        strcpy(cmd_argv[i], params[i - 1].value.c_str());
+        cmd_argc = t.size() + 1;
+        cmd_argv = new char *[cmd_argc];
+        cmd_argv[0] = strdup(cmd_name.c_str());
+        for (size_t i = 0; i < t.size(); i++) {
+            cmd_argv[i + 1] = strdup(t[i].value.c_str());
+        }
+    } else {
+        cmd_argc = 0;
     }
 }
 
 
 Command::~Command() {
-    for (size_t i = 0; i < (params.size() + 1); i++)
-        delete[] cmd_argv[i];
+    for (size_t i = 0; i < cmd_argc; i++)
+        free(cmd_argv[i]);
     delete[] cmd_argv;
 }
 
 void Command::execute(Shell *shell) {
     if (internal_functions.find(cmd_name) != internal_functions.end())
-        internal_functions[cmd_name](params, shell);
-
-    pid_t pid;
-    int status;
-    if ((pid = fork()) < 0) {
-        std::cerr << "Failed to fork" << std::endl;
-        shell->error_code = -1;
-    } else if (pid > 0) {
-        addstr("parent\n");
-        if ((pid = waitpid(pid, &status, 0)) < 0) {
-            std::cerr << "waitpid error" << std::endl;
-            exit(1);
+        internal_functions[cmd_name](cmd_argc, cmd_argv, shell);
+    else {
+        pid_t pid;
+        int status;
+        if ((pid = fork()) < 0) {
+            std::cerr << "Failed to fork" << std::endl;
+            shell->error_code = -1;
+        } else if (pid > 0) {
+            addstr("parent\n");
+            if ((pid = waitpid(pid, &status, 0)) < 0) {
+                std::cerr << "waitpid error" << std::endl;
+                exit(1);
+            }
+            shell->error_code = status;
+        } else {
+            addstr("child\n");
+            execvp(cmd_name.c_str(), cmd_argv);
         }
-        shell->error_code = status;
-    } else {
-        addstr("child\n");
-        execvp(cmd_name.c_str(), cmd_argv);
     }
+
 }
 
-void Command::set_redirected_files() {
+void Command::set_redirected_files(std::vector<Token> &params) {
     for (size_t i = 0; i < params.size(); i++) {
         if (params[i].type == TokenType::Redirection) {
             if (is_with_symbol(params[i].value, '&')) {
@@ -151,7 +154,7 @@ void Command::set_redirected_files() {
     }
 }
 
-void Command::set_background_mode() {
+void Command::set_background_mode(std::vector<Token> &params) {
     if (params.empty())
         return;
     if (params[params.size() - 1].type == TokenType::BackgroundType) {
