@@ -131,26 +131,46 @@ Command::~Command() {
 
 void Command::execute(Shell *shell) {
     addch('\n');
-    for(int i = 0; i < cmd_argc; i++) {
+    for (int i = 0; i < cmd_argc; i++) {
         printw("%s ", cmd_argv[i]);
     }
     addch('\n');
     if (internal_functions.find(cmd_name) != internal_functions.end())
         internal_functions[cmd_name](cmd_argc, cmd_argv, shell);
     else {
+        int child_to_parent[2];
+        if (pipe(child_to_parent) == -1) {
+            std::cerr << "Error creating pipe" << std::endl;
+            shell->error_code = -2;
+        }
         pid_t pid;
         int status;
         if ((pid = fork()) < 0) {
             std::cerr << "Failed to fork" << std::endl;
             shell->error_code = -1;
         } else if (pid > 0) {
+            close(child_to_parent[1]);
             addstr("parent\n");
             if ((pid = waitpid(pid, &status, 0)) < 0) {
                 std::cerr << "waitpid error" << std::endl;
                 exit(1);
             }
+            constexpr size_t BUFFSIZE = 4096;
+            char buffer[BUFFSIZE];
+            int err = 0;
+            FILE *child_input = fdopen(child_to_parent[0], "r");
+            do {
+                size_t count = fread(buffer, sizeof(char), BUFFSIZE, child_input);
+                if (ferror(child_input)) {
+                    break;
+                }
+                printw("%s", buffer);
+            } while (!feof(child_input));
+            close(child_to_parent[0]);
             shell->error_code = status;
         } else {
+            close(child_to_parent[0]);
+            dup2(child_to_parent[1], 1);
             addstr("child\n");
             execvp(cmd_name.c_str(), cmd_argv);
         }
