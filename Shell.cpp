@@ -23,12 +23,14 @@ Shell::Shell() {
     get_env_vars(environ);
 
     std::ifstream history_file{HISTORY_FILE};
-    std::stack<std::string> read_history;
-    std::string command;
-    while (getline(history_file, command)) {
-        history.emplace(command);
+    if (history_file.is_open()) {
+        std::stack<std::string> read_history;
+        std::string command;
+        while (getline(history_file, command)) {
+            history.emplace(command);
+        }
+        history_file.close();
     }
-    history_file.close();
 
     initscr();
     noecho();
@@ -42,7 +44,7 @@ Shell::Shell() {
     std::string path = path_;
     path += ":" + pwd + "/mycat/";
     setenv("PATH", path.c_str(), 1);
-    free(buffer);
+    delete[] buffer;
 }
 
 Shell::~Shell() {
