@@ -131,7 +131,8 @@ Command::Command(std::vector<Token> &t) {
 Command::~Command() {
     for (size_t i = 0; i < cmd_argc; i++)
         free(cmd_argv[i]);
-    delete[] cmd_argv;
+    if (cmd_argc)
+        delete[] cmd_argv;
 }
 
 void Command::execute(Shell *shell) {
