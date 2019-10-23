@@ -26,6 +26,8 @@ std::vector<Token> parse(const std::string &line);
 
 Shell::Shell() {
     get_env_vars(environ);
+    char *path_ = getenv("PATH");
+    std::string path = path_;
     std::ifstream history_file{".history"};
     std::stack<std::string> read_history;
     std::string command;
@@ -39,6 +41,8 @@ Shell::Shell() {
     char *buffer = new char[PATH_MAX];
     auto cwd = getcwd(buffer, PATH_MAX);
     pwd = cwd;
+    path += ":" + pwd + "/mycat/";
+    setenv("PATH", path.c_str(), 1);
     free(buffer);
 }
 
