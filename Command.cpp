@@ -61,9 +61,10 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
             } else {
                 shell->error_code = errno;
                 if (shell->error_code == EACCES)
-                    printw("Permission is denied for any component of the pathname\n");
+                    std::cerr << "Permission is denied for any component of the pathname" << std::endl;
                 else if (shell->error_code == ENOENT)
-                    printw("A component of path does not name an existing directory or path is an empty string\n");
+                    std::cerr << "A component of path does not name an existing directory or path is an empty string"
+                              << std::endl;
             }
             return 0;
         }},
@@ -101,7 +102,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
                     if (shell->local_variables.find(std::string(argv[i])) != shell->local_variables.end())
                         setenv(argv[i], shell->local_variables[std::string(argv[i])].c_str(), 1);
                     else
-                        printw("%s is not defined!\n", argv[i]);
+                        std::cerr << argv[i] << " is not defined!" << std::endl;
                 }
             }
             return 0;
@@ -156,7 +157,6 @@ void Command::execute(Shell *shell) {
             shell->error_code = -1;
         } else if (pid > 0) {
             close(child_to_parent[1]);
-            addstr("parent\n");
             constexpr size_t BUFFSIZE = 4096;
             char buffer[BUFFSIZE];
             int err = 0;

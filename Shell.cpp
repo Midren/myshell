@@ -19,23 +19,21 @@
 #define KEY_BACKSPACE 127
 #endif
 
-extern char **environ;
-
-std::vector<Token> parse(const std::string &line);
-
-
 Shell::Shell() {
     get_env_vars(environ);
-    std::ifstream history_file{".history"};
+
+    std::ifstream history_file{HISTORY_FILE};
     std::stack<std::string> read_history;
     std::string command;
     while (getline(history_file, command)) {
         history.emplace(command);
     }
     history_file.close();
+
     initscr();
     noecho();
     scrollok(stdscr, true);
+
     char *buffer = new char[PATH_MAX];
     auto cwd = getcwd(buffer, PATH_MAX);
     pwd = cwd;
@@ -54,12 +52,14 @@ Shell::~Shell() {
         history_reversed.pop();
     }
     history_file.close();
+
     endwin();
 }
 
 void Shell::start() {
     keypad(stdscr, true);
     printw("%s $ ", pwd.c_str());
+
     std::string line;
     wchar_t c;
     int x, y, start_y, start_x = pwd.size() + 3;
@@ -191,11 +191,11 @@ void Shell::execute(std::string line) {
     for (auto &cmd:token_commands) {
         for (size_t i = 0; i < cmd.size(); i++) {
             auto &token = cmd[i];
-//        for (auto &token:cmd) {
             if (token.type == TokenType::AddVar) {
                 local_variables[token.value.substr(0, token.value.find('='))] =
                         token.value.substr(token.value.find('=') + 1,
                                            token.value.size() - token.value.find(('=')) - 1);
+                cmd.erase(cmd.begin() + i);
             } else if (token.type == TokenType::Var) {
                 token.value = local_variables[token.value.substr(1, token.value.length() - 1)];
                 token.type = TokenType::CmdWord;
@@ -221,7 +221,8 @@ void Shell::execute(std::string line) {
                 cmd.erase(cmd.begin() + values.size() + i);
             }
         }
-        commands.emplace_back(cmd);
+        if (!cmd.empty())
+            commands.emplace_back(cmd);
     }
 
     std::for_each(commands.begin(), commands.end(),
