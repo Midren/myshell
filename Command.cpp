@@ -157,28 +157,31 @@ void Command::execute(Shell *shell) {
         } else if (pid > 0) {
             close(child_to_parent[1]);
             addstr("parent\n");
+            constexpr size_t BUFFSIZE = 4096;
+            char buffer[BUFFSIZE];
+            int err = 0;
             if ((pid = waitpid(pid, &status, 0)) < 0) {
                 std::cerr << "waitpid error" << std::endl;
                 exit(1);
             }
-            constexpr size_t BUFFSIZE = 4096;
-            char buffer[BUFFSIZE];
-            int err = 0;
             FILE *child_input = fdopen(child_to_parent[0], "r");
             do {
                 size_t count = fread(buffer, sizeof(char), BUFFSIZE, child_input);
                 if (ferror(child_input)) {
                     break;
                 }
+                if (count >= 0)
+                    buffer[count] = '\0';
                 printw("%s", buffer);
             } while (!feof(child_input));
-            close(child_to_parent[0]);
+            fclose(child_input);
             shell->error_code = status;
         } else {
             close(child_to_parent[0]);
             dup2(child_to_parent[1], 1);
-            addstr("child\n");
             execvp(cmd_name.c_str(), cmd_argv);
+            std::cout << "Failed to exec!" << std::endl;
+            exit(0);
         }
     }
 

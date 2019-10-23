@@ -236,7 +236,7 @@ void Shell::get_env_vars(char **environ) {
     char *value;
     for (p = environ; *p; p++) {
         e = strchr(*p, '=');
-        ind = (int)(e - *p);
+        ind = (int) (e - *p);
         name = new char[ind + 1];
         value = new char[strlen(*p) - ind];
         strncpy(name, *p, ind);
