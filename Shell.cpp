@@ -9,6 +9,7 @@
 
 #include <unistd.h>
 #include <stack>
+#include <cstring>
 
 #include "Command.h"
 #include "util.h"
