@@ -9,6 +9,8 @@
 #include "Token.h"
 #include "Shell.h"
 
+constexpr size_t BUFFSIZE = 4096;
+
 class Command {
 public:
     explicit Command(std::vector<Token> &t);

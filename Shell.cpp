@@ -37,6 +37,11 @@ Shell::Shell() {
     char *buffer = new char[PATH_MAX];
     auto cwd = getcwd(buffer, PATH_MAX);
     pwd = cwd;
+
+    char *path_ = getenv("PATH");
+    std::string path = path_;
+    path += ":" + pwd + "/mycat/";
+    setenv("PATH", path.c_str(), 1);
     free(buffer);
 }
 
@@ -192,9 +197,10 @@ void Shell::execute(std::string line) {
         for (size_t i = 0; i < cmd.size(); i++) {
             auto &token = cmd[i];
             if (token.type == TokenType::AddVar) {
-                local_variables[token.value.substr(0, token.value.find('='))] =
-                        token.value.substr(token.value.find('=') + 1,
-                                           token.value.size() - token.value.find(('=')) - 1);
+                size_t ind = token.value.find('=');
+                local_variables[token.value.substr(0, ind)] =
+                        token.value.substr(ind + 1,
+                                           token.value.size() - ind - 1);
                 cmd.erase(cmd.begin() + i);
             } else if (token.type == TokenType::Var) {
                 token.value = local_variables[token.value.substr(1, token.value.length() - 1)];
@@ -230,19 +236,12 @@ void Shell::execute(std::string line) {
 }
 
 void Shell::get_env_vars(char **environ) {
-    char **p;
-    char *e;
-    int ind;
-    char *name;
-    char *value;
-    for (p = environ; *p; p++) {
-        e = strchr(*p, '=');
-        ind = (int) (e - *p);
-        name = new char[ind + 1];
-        value = new char[strlen(*p) - ind];
-        strncpy(name, *p, ind);
-        strcpy(value, e + 1);
-        local_variables[name] = value;
+    std::string env_pair;
+    size_t ind;
+    for (char **p = environ; *p; p++) {
+        env_pair = *p;
+        ind = env_pair.find('=');
+        local_variables[env_pair.substr(0, ind)] = env_pair.substr(ind + 1, env_pair.size() - ind - 1);
     }
 }
 

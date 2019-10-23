@@ -92,12 +92,11 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
             for (int i = 1; i < argc; i++) {
                 std::string addVarToken(argv[i]);
                 if (addVarToken.find('=') != std::string::npos) {
-                    setenv(addVarToken.substr(0, addVarToken.find('=')).c_str(),
-                           addVarToken.substr(addVarToken.find('=') + 1,
-                                              addVarToken.size() - addVarToken.find(('=')) - 1).c_str(), 1);
-                    shell->local_variables[addVarToken.substr(0, addVarToken.find('='))] =
-                            addVarToken.substr(addVarToken.find('=') + 1,
-                                               addVarToken.size() - addVarToken.find(('=')) - 1);
+                    size_t ind = addVarToken.find('=');
+                    setenv(addVarToken.substr(0, ind).c_str(),
+                           addVarToken.substr(ind + 1, addVarToken.size() - ind - 1).c_str(), 1);
+                    shell->local_variables[addVarToken.substr(0, ind)] =
+                            addVarToken.substr(ind + 1, addVarToken.size() - ind - 1);
                 } else {
                     if (shell->local_variables.find(std::string(argv[i])) != shell->local_variables.end())
                         setenv(argv[i], shell->local_variables[std::string(argv[i])].c_str(), 1);
@@ -137,11 +136,6 @@ Command::~Command() {
 }
 
 void Command::execute(Shell *shell) {
-    addch('\n');
-    for (int i = 0; i < cmd_argc; i++) {
-        printw("%s ", cmd_argv[i]);
-    }
-    addch('\n');
     if (internal_functions.find(cmd_name) != internal_functions.end())
         internal_functions[cmd_name](cmd_argc, cmd_argv, shell);
     else {
@@ -157,13 +151,12 @@ void Command::execute(Shell *shell) {
             shell->error_code = -1;
         } else if (pid > 0) {
             close(child_to_parent[1]);
-            constexpr size_t BUFFSIZE = 4096;
-            char buffer[BUFFSIZE];
-            int err = 0;
             if ((pid = waitpid(pid, &status, 0)) < 0) {
                 std::cerr << "waitpid error" << std::endl;
                 exit(1);
             }
+
+            char buffer[BUFFSIZE];
             FILE *child_input = fdopen(child_to_parent[0], "r");
             do {
                 size_t count = fread(buffer, sizeof(char), BUFFSIZE, child_input);
@@ -175,6 +168,7 @@ void Command::execute(Shell *shell) {
                 printw("%s", buffer);
             } while (!feof(child_input));
             fclose(child_input);
+
             shell->error_code = status;
         } else {
             close(child_to_parent[0]);
