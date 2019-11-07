@@ -69,13 +69,7 @@ std::string join(const std::vector<std::string> &array, const char separator) {
     return result;
 }
 
-#define PATH_SEPARATOR '/'
-
-void parse_path(std::string &path) {
-
-}
-
-std::vector<Token> replace_wildcards(std::string data) {
+std::vector<Token> replace_wildcards(const std::string &data) {
     char *path, *pattern;
     char *str = strdup(data.c_str());
     path = dirname(str);

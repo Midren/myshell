@@ -13,6 +13,7 @@
 #ifndef __APPLE__
 
 #include <wait.h>
+#include <fstream>
 
 #endif
 
@@ -106,6 +107,24 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
             }
             return 0;
 
+        }},
+        {std::string("."),       [](int argc, char **argv, Shell *shell) {
+            if (argc < 2) {
+                std::cerr << std::endl << ".: not enough arguments" << std::endl;
+                shell->error_code = 1;
+                return 1;
+            }
+            std::ifstream fin(argv[1]);
+            if (!fin.is_open()) {
+                std::cerr << std::endl << ".: no such file or directory: " << argv[1] << std::endl;
+                shell->error_code = 2;
+                return 2;
+            }
+            std::string line;
+            while (std::getline(fin, line)) {
+                shell->execute(line);
+            }
+            return 0;
         }}
 };
 

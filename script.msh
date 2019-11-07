@@ -1,0 +1,4 @@
+#!/home/midren/Documents/ucu/os/myshell/cmake-build-debug/myshell
+#Absolute path is necessary in shebang.
+echo "Files:"
+ls

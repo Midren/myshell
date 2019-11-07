@@ -9,7 +9,7 @@
 
 #include "Token.h"
 
-std::vector<Token> replace_wildcards(std::string data);
+std::vector<Token> replace_wildcards(const std::string &data);
 
 bool is_with_symbol(const std::string &str, char sym);
 
@@ -28,7 +28,7 @@ std::vector<std::vector<T>> split(std::vector<T> &container, std::function<bool(
 }
 
 
-bool matches(char* text, char* pattern);
+bool matches(char *text, char *pattern);
 
 std::string join(const std::vector<std::string> &array, char separator);
 
