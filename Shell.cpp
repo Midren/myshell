@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
-#include <curses.h>
 #include <fstream>
 
 #include <unistd.h>
@@ -65,7 +64,7 @@ Shell::~Shell() {
 
 void Shell::start() {
     keypad(stdscr, true);
-    printw("%s $ ", pwd.c_str());
+    print("%s $ ", pwd.c_str());
 
     std::string line;
     wchar_t c;
@@ -83,7 +82,7 @@ void Shell::start() {
             case '\n':
                 move(start_y, start_x);
                 clrtobot();
-                printw("%s\n", line.c_str());
+                print("%s\n", line.c_str());
                 while (!previous_commands.empty()) {
                     history.push(previous_commands.top());
                     previous_commands.pop();
@@ -93,7 +92,7 @@ void Shell::start() {
                 execute(line);
                 line.clear();
                 std::cout.flush();
-                printw("\n%s $ ", pwd.c_str());
+                print("\n%s $ ", pwd.c_str());
                 start_x = pwd.size() + 3;
                 refresh();
                 getsyx(start_y, max_x);
@@ -120,7 +119,7 @@ void Shell::start() {
                     clrtobot();
                     line = history.top();
                     history.pop();
-                    printw("%s", line.c_str());
+                    print("%s", line.c_str());
                     max_x = start_x + line.size();
                 }
                 break;
@@ -132,7 +131,7 @@ void Shell::start() {
                     clrtobot();
                     line = previous_commands.top();
                     previous_commands.pop();
-                    printw("%s", line.c_str());
+                    print("%s", line.c_str());
                     max_x = start_x + line.size();
                 } else if (line.empty())
                     new_command = true;
@@ -151,7 +150,7 @@ void Shell::start() {
                     line.erase((x + (y - start_y) * length_of_the_line - start_x) - 1, 1);
                     move(start_y, start_x);
                     clrtobot();
-                    printw("%s", line.c_str());
+                    print("%s", line.c_str());
                     if (x == 0)
                         move(y - 1, length_of_the_line - 1);
                     else
@@ -175,7 +174,7 @@ void Shell::start() {
                 line.insert(line.begin() + (x + (y - start_y) * length_of_the_line - start_x), c);
                 move(start_y, start_x);
                 clrtobot();
-                printw("%s", line.c_str());
+                print("%s", line.c_str());
                 (x == length_of_the_line - 1) ? move(y + 1, 0) : move(y, x + 1);
                 ++max_x;
                 break;

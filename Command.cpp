@@ -21,7 +21,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         {std::string("merrno"),  [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if (strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) {
-                    printw("merrno [-h|--help] -- show error code of last command\n");
+                    shell->print("merrno [-h|--help] -- show error code of last command\n");
                     return 0;
                 } else {
                     shell->error_code = 1;
@@ -29,26 +29,26 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
                 }
             }
             shell->error_code = 0;
-            printw("%d", shell->error_code);
+            shell->print("%d", shell->error_code);
             return 0;
         }},
         {std::string("mpwd"),    [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if ((strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) && argv[i][0] == '-') {
-                    printw("\nmpwd [-h|--help] -- show current directory\n");
+                    shell->print("\nmpwd [-h|--help] -- show current directory\n");
                     return 0;
                 } else {
                     shell->error_code = 1;
                 }
             }
             shell->error_code = 0;
-            printw("%s\n", shell->pwd.c_str());
+            shell->print("%s\n", shell->pwd.c_str());
             return 0;
         }},
         {std::string("mcd"),     [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if ((strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) && argv[i][0] == '-') {
-                    printw("\nmcd <path> [-h|--help]  -- Go to path <path>\n");
+                    shell->print("\nmcd <path> [-h|--help]  -- Go to path <path>\n");
                     shell->error_code = 0;
                     return 0;
                 } else
@@ -72,7 +72,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         {std::string("mexit"),   [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if ((strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) && argv[i][0] == '-') {
-                    printw("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0\n");
+                    shell->print("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0\n");
                     return 0;
                 }
             }
@@ -85,7 +85,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         {std::string("mecho"),   [](int argc, char **argv, Shell *shell) {
             shell->error_code = 0;
             for (int i = 1; i < argc; i++)
-                printw("%s ", argv[i]);
+                shell->print("%s ", argv[i]);
             return 0;
         }
         },
@@ -162,6 +162,7 @@ void Command::execute(Shell *shell) {
         if (pipe(child_to_parent) == -1) {
             std::cerr << "Error creating pipe" << std::endl;
             shell->error_code = -2;
+            return;
         }
         pid_t pid;
         int status;
@@ -184,14 +185,14 @@ void Command::execute(Shell *shell) {
                 }
                 if (count >= 0)
                     buffer[count] = '\0';
-                printw("%s", buffer);
+                shell->print("%s", buffer);
             } while (!feof(child_input));
             fclose(child_input);
 
             shell->error_code = status;
         } else {
             close(child_to_parent[0]);
-            dup2(child_to_parent[1], 1);
+            dup2(child_to_parent[1], STDOUT_FILENO);
             execvp(cmd_name.c_str(), cmd_argv);
             std::cout << "Failed to exec!" << std::endl;
             exit(0);

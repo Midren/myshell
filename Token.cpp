@@ -15,10 +15,6 @@ Token::Token(std::string data, TokenType t) : value(std::move(data)), type(t) {
             sep = value.find('\"');
             value = value.substr(0, sep) + value.substr(sep + 1, value.length() - 2 - sep);
             break;
-        case Var:
-        case InlineCmd:
-            //TODO: invoke shell to run command
-            break;
         default:
             break;
     }

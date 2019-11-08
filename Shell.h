@@ -6,18 +6,36 @@
 #include <stack>
 #include <vector>
 #include "Token.h"
+#include <curses.h>
 
 const std::string HISTORY_FILE = ".history";
 
 class Shell {
 public:
-    Shell();;
+    Shell();
+
+    explicit Shell(bool mode) : is_ncurses(mode) {};
 
     ~Shell();
 
     void start();
 
     void execute(std::string line);
+
+    template<typename... Args>
+    void print(const char *str, Args... args) {
+        if (is_ncurses)
+            printw(str, args...);
+        else
+            printf(str, args...);
+    }
+
+    void print(const char *str) {
+        if (is_ncurses)
+            printw(str);
+        else
+            printf("%s", str);
+    }
 
 private:
     friend class Command;
@@ -26,6 +44,7 @@ private:
     std::stack<std::string> history;
     std::string pwd;
     ssize_t error_code = 0;
+    bool is_ncurses = true;
 
     void get_env_vars(char **environ);
 };
