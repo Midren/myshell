@@ -157,6 +157,9 @@ Command::~Command() {
 }
 
 void Command::execute(Shell *shell) {
+    for(int i = 0; i < cmd_argc; i++) {
+        std::cout << "+" << cmd_argv[i];
+    }
     int saved_in = dup(STDIN_FILENO),
             saved_out = dup(STDOUT_FILENO),
             saved_err = dup(STDERR_FILENO);
@@ -240,10 +243,10 @@ void Command::set_redirected_files(std::vector<Token> &params) {
                         error_file = open(params[i + 1].value.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0777);
                         break;
                     case '<':
-                        input_file = open(params[i + 1].value.c_str(), O_RDONLY | O_CREAT | O_TRUNC, 0777);
+                        input_file = open(params[i + 1].value.c_str(), O_RDONLY, 0777);
                 }
-                params.erase(params.begin() + i + 1, params.begin() + i + 3);
-                i -= 2;
+                params.erase(params.begin() + i, params.begin() + i + 2);
+                i -= 1;
             }
         }
     }
