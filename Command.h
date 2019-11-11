@@ -20,6 +20,10 @@ public:
 
     void execute(Shell *shell);
 
+    void set_IFD(const int &fd);
+
+    void set_OFD(const int &fd);
+
 private:
     void set_redirected_files(std::vector<Token> &params);
 

@@ -14,6 +14,7 @@
 #include "util.h"
 
 #ifdef __APPLE__
+extern char **environ;
 #undef KEY_BACKSPACE
 #define KEY_BACKSPACE 127
 #endif
@@ -63,7 +64,6 @@ Shell::~Shell() {
     history_file.close();
 
     delscreen(scr);
-//    endwin();
 }
 
 void Shell::start() {
@@ -271,7 +271,21 @@ void Shell::execute(std::string line) {
         if (!cmd.empty())
             commands.emplace_back(cmd);
     }
-
+    this->print("before loop");
+    int tmp_fd;
+    for (size_t i = 0; i < commands.size(); i++) {
+        if (i == 0)
+            commands[i].set_IFD(STDIN_FILENO);
+        else if (i == commands.size() - 1) {
+            commands[i].set_IFD(tmp_fd);
+            commands[i].set_OFD(STDOUT_FILENO);
+        } else {
+            FILE *tmp = tmpfile();
+            tmp_fd = fileno(tmp);
+            commands[i - 1].set_OFD(tmp_fd);
+            commands[i].set_IFD(tmp_fd);
+        }
+    }
     std::for_each(commands.begin(), commands.end(),
                   std::bind(std::mem_fn(&Command::execute), std::placeholders::_1, this));
 }

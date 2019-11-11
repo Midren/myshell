@@ -1,21 +1,18 @@
 #include "Command.h"
 #include <unistd.h>
 #include <cstdlib>
+#include <fstream>
 #include <map>
 #include <curses.h>
 #include <iostream>
 
 #include "util.h"
 #include <cstring>
-
+#include <fcntl.h>
 #include <unistd.h>
 
 #ifndef __APPLE__
-
 #include <wait.h>
-#include <fstream>
-#include <fcntl.h>
-
 #endif
 
 std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Command::internal_functions = {
@@ -182,6 +179,8 @@ void Command::execute(Shell *shell) {
             shell->error_code = -1;
         } else if (pid > 0) {
             close(child_to_parent[1]);
+            if (is_background)
+                return;
             if ((pid = waitpid(pid, &status, 0)) < 0) {
                 std::cerr << "waitpid error" << std::endl;
                 exit(1);
@@ -257,4 +256,12 @@ void Command::set_background_mode(std::vector<Token> &params) {
         is_background = true;
         params.erase(params.end() - 1);
     }
+}
+
+void Command::set_IFD(const int &fd) {
+    input_file = fd;
+}
+
+void Command::set_OFD(const int &fd) {
+    output_file = fd;
 }
