@@ -50,20 +50,7 @@ Shell::Shell() {
 }
 
 Shell::~Shell() {
-    std::stack<std::string> history_reversed;
-    while (!history.empty()) {
-        history_reversed.push(history.top());
-        history.pop();
-    }
-    std::ofstream history_file{".history"};
-    while (!history_reversed.empty()) {
-        history_file << history_reversed.top() << std::endl;
-        history_reversed.pop();
-    }
-    history_file.close();
-
     delscreen(scr);
-//    endwin();
 }
 
 void Shell::start() {
@@ -190,6 +177,7 @@ void Shell::start() {
 }
 
 void Shell::execute(std::string line) {
+    update_history();
     auto tokens = parse(line);
 
     std::vector<std::vector<Token>> token_commands = split<Token>(tokens, [](const Token &token) {
@@ -332,3 +320,19 @@ std::vector<Token> parse(const std::string &line) {
     return tokens;
 }
 
+// At least, it works
+void Shell::update_history() {
+    // FIXME: VERY BAD CODE YOU CAN NOT READ FURTHER !!!
+    std::stack<std::string> old_history{history};
+    std::stack<std::string> history_reversed;
+    while (!old_history.empty()) {
+        history_reversed.push(old_history.top());
+        old_history.pop();
+    }
+    std::ofstream history_file{".history"};
+    while (!history_reversed.empty()) {
+        history_file << history_reversed.top() << std::endl;
+        history_reversed.pop();
+    }
+    history_file.close();
+}
