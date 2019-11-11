@@ -40,7 +40,7 @@ public:
 
 private:
     friend class Command;
-
+    void update_history();
     std::map<std::string, std::string> local_variables;
     std::stack<std::string> history;
     std::string pwd;

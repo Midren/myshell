@@ -1,20 +1,19 @@
 #include "Command.h"
 #include <unistd.h>
 #include <cstdlib>
+#include <fstream>
 #include <map>
 #include <curses.h>
 #include <iostream>
 
 #include "util.h"
 #include <cstring>
-
+#include <fcntl.h>
 #include <unistd.h>
 
 #ifndef __APPLE__
 
 #include <wait.h>
-#include <fstream>
-#include <fcntl.h>
 
 #endif
 
@@ -164,11 +163,6 @@ void Command::execute(Shell *shell) {
     if (input_file != STDIN_FILENO || output_file != STDOUT_FILENO || error_file != STDERR_FILENO)
         shell->is_ncurses = false;
 
-//    printf("\n%d\n", cmd_argc);
-//    for(int i = 0; i < cmd_argc; i++) {
-//        printf("%s+\n", cmd_argv[i]);
-//    }
-
     dup2(input_file, STDIN_FILENO);
     dup2(output_file, STDOUT_FILENO);
     dup2(error_file, STDERR_FILENO);
@@ -188,6 +182,8 @@ void Command::execute(Shell *shell) {
             shell->error_code = -1;
         } else if (pid > 0) {
             close(child_to_parent[1]);
+            if (is_background)
+                return;
             if ((pid = waitpid(pid, &status, 0)) < 0) {
                 std::cerr << "waitpid error" << std::endl;
                 exit(1);
@@ -275,4 +271,12 @@ Command::Command(const Command &c) : is_background(c.is_background), input_file(
         cmd_argv[i + 1] = strdup(cmd_argv[i]);
     }
     cmd_argv[cmd_argc] = nullptr;
+}
+
+void Command::set_IFD(const int &fd) {
+    input_file = fd;
+}
+
+void Command::set_OFD(const int &fd) {
+    output_file = fd;
 }
