@@ -24,10 +24,11 @@ public:
 
     template<typename... Args>
     void print(const char *str, Args... args) {
-        if (is_ncurses)
+        if (is_ncurses) {
             printw(str, args...);
-        else
+        } else {
             printf(str, args...);
+        }
     }
 
     void print(const char *str) {
@@ -44,6 +45,7 @@ private:
     std::stack<std::string> history;
     std::string pwd;
     ssize_t error_code = 0;
+    SCREEN *scr;
     bool is_ncurses = true;
 
     void get_env_vars(char **environ);

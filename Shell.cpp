@@ -31,7 +31,10 @@ Shell::Shell() {
         history_file.close();
     }
 
-    initscr();
+//    initscr();
+    FILE *fd = fopen("/dev/tty", "r+");
+    scr = newterm(nullptr, fd, fd);
+    setvbuf(stdout, nullptr, _IONBF, 0);
     noecho();
     scrollok(stdscr, true);
 
@@ -59,7 +62,8 @@ Shell::~Shell() {
     }
     history_file.close();
 
-    endwin();
+    delscreen(scr);
+//    endwin();
 }
 
 void Shell::start() {
@@ -226,6 +230,42 @@ void Shell::execute(std::string line) {
                 auto values = replace_wildcards(token.value);
                 cmd.insert(cmd.begin() + i, values.begin(), values.end());
                 cmd.erase(cmd.begin() + values.size() + i);
+            } else if (token.type == TokenType::InlineCmd) {
+                std::string res;
+                FILE *tmp = tmpfile();
+                int saved_in = dup(STDIN_FILENO),
+                        saved_out = dup(STDOUT_FILENO),
+                        tmp_fd = fileno(tmp);
+
+                auto sh = Shell(false);
+                sh.execute("mcd " + pwd);
+                dup2(tmp_fd, STDOUT_FILENO);
+
+                sh.execute(token.value);
+
+                fflush(tmp);
+                rewind(tmp);
+                const size_t buffer_size = 4096;
+                auto *buf = new char[buffer_size + 1];
+                while (fread(buf, sizeof(char), buffer_size, tmp) > 0) {
+                    if (ferror(tmp) && !feof(tmp)) {
+                        perror("Error happened inside internal command");
+                        error_code = 4;
+                        delete[] buf;
+                        return;
+                    } else {
+                        res += buf;
+                    }
+                }
+                delete[] buf;
+
+                fclose(tmp);
+                dup2(saved_out, STDOUT_FILENO);
+                dup2(saved_in, STDIN_FILENO);
+                close(saved_in);
+                close(saved_out);
+
+                token.value = res;
             }
         }
         if (!cmd.empty())
@@ -271,8 +311,11 @@ std::vector<Token> parse(const std::string &line) {
             tokens.emplace_back(word, TokenType::BackgroundType);
         } else if (word[0] == '$') {
             if (word[1] == '(') {
-                std::getline(ss, tmp, ')');
-                word += ' ' + tmp + ')';
+                if (word.back() != ')') {
+                    std::getline(ss, tmp, ')');
+                    word += tmp + ")";
+                }
+                word = word.substr(2, word.size() - 3);
                 tokens.emplace_back(word, TokenType::InlineCmd);
             } else {
                 tokens.emplace_back(word, TokenType::Var);

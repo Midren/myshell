@@ -194,8 +194,8 @@ void Command::execute(Shell *shell) {
             close(child_to_parent[0]);
             dup2(child_to_parent[1], STDOUT_FILENO);
             execvp(cmd_name.c_str(), cmd_argv);
-            std::cout << "Failed to exec!" << std::endl;
-            exit(0);
+            std::cerr << "Failed to exec!" << std::endl;
+            exit(1);
         }
     }
 
