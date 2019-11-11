@@ -16,6 +16,8 @@ class Command {
 public:
     explicit Command(std::vector<Token> &t);
 
+    Command(const Command &c);
+
     ~Command();
 
     void execute(Shell *shell);
@@ -25,7 +27,7 @@ private:
 
     void set_background_mode(std::vector<Token> &params);
 
-    bool is_background;
+    bool is_background = false;
     int input_file = STDIN_FILENO;
     int output_file = STDOUT_FILENO;
     int error_file = STDERR_FILENO;

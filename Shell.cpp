@@ -199,14 +199,14 @@ void Shell::execute(std::string line) {
     std::vector<Command> commands;
 
     for (auto &cmd:token_commands) {
-        for (size_t i = 0; i < cmd.size(); i++) {
-            auto &token = cmd[i];
+        for (size_t t = 0; t < cmd.size(); t++) {
+            auto &token = cmd[t];
             if (token.type == TokenType::AddVar) {
                 size_t ind = token.value.find('=');
                 local_variables[token.value.substr(0, ind)] =
                         token.value.substr(ind + 1,
                                            token.value.size() - ind - 1);
-                cmd.erase(cmd.begin() + i);
+                cmd.erase(cmd.begin() + t);
             } else if (token.type == TokenType::Var) {
                 token.value = local_variables[token.value.substr(1, token.value.length() - 1)];
                 token.type = TokenType::CmdWord;
@@ -228,8 +228,8 @@ void Shell::execute(std::string line) {
                 token.type = TokenType::CmdWord;
             } else if (token.type == TokenType::CmdWildCard) {
                 auto values = replace_wildcards(token.value);
-                cmd.insert(cmd.begin() + i, values.begin(), values.end());
-                cmd.erase(cmd.begin() + values.size() + i);
+                cmd.insert(cmd.begin() + t, values.begin(), values.end());
+                cmd.erase(cmd.begin() + values.size() + t);
             } else if (token.type == TokenType::InlineCmd) {
                 std::string res;
                 FILE *tmp = tmpfile();
@@ -268,8 +268,9 @@ void Shell::execute(std::string line) {
                 token.value = res;
             }
         }
-        if (!cmd.empty())
+        if (!cmd.empty()) {
             commands.emplace_back(cmd);
+        }
     }
 
     std::for_each(commands.begin(), commands.end(),

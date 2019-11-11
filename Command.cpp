@@ -163,6 +163,12 @@ void Command::execute(Shell *shell) {
             saved_err = dup(STDERR_FILENO);
     if (input_file != STDIN_FILENO || output_file != STDOUT_FILENO || error_file != STDERR_FILENO)
         shell->is_ncurses = false;
+
+//    printf("\n%d\n", cmd_argc);
+//    for(int i = 0; i < cmd_argc; i++) {
+//        printf("%s+\n", cmd_argv[i]);
+//    }
+
     dup2(input_file, STDIN_FILENO);
     dup2(output_file, STDOUT_FILENO);
     dup2(error_file, STDERR_FILENO);
@@ -257,4 +263,16 @@ void Command::set_background_mode(std::vector<Token> &params) {
         is_background = true;
         params.erase(params.end() - 1);
     }
+}
+
+Command::Command(const Command &c) : is_background(c.is_background), input_file(c.input_file),
+                                     output_file(c.output_file), error_file(c.error_file),
+                                     cmd_name(c.cmd_name), cmd_argc(c.cmd_argc) {
+
+    cmd_argv = new char *[cmd_argc + 1];
+    cmd_argv[0] = strdup(cmd_name.c_str());
+    for (size_t i = 0; i < cmd_argc; i++) {
+        cmd_argv[i + 1] = strdup(cmd_argv[i]);
+    }
+    cmd_argv[cmd_argc] = nullptr;
 }
