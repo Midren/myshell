@@ -260,16 +260,14 @@ void Shell::execute(std::string line) {
             commands.emplace_back(cmd);
         }
     }
-    this->print("before loop");
-    int tmp_fd;
+    int tmp_fd[2];
+    pipe(tmp_fd);
     for (size_t i = 0; i < commands.size(); i++) {
         if (i == commands.size() - 1) {
-            commands[i].set_IFD(tmp_fd);
+            commands[i].set_OFD(STDOUT_FILENO);
         } else {
-            FILE *tmp = tmpfile();
-            tmp_fd = fileno(tmp);
-            commands[i - 1].set_OFD(tmp_fd);
-            commands[i].set_IFD(tmp_fd);
+            commands[i].set_OFD(tmp_fd[1]);
+            commands[i + 1].set_IFD(tmp_fd[0]);
         }
     }
     std::for_each(commands.begin(), commands.end(),
