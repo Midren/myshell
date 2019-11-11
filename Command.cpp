@@ -14,6 +14,7 @@
 
 #include <wait.h>
 #include <fstream>
+#include <fcntl.h>
 
 #endif
 
@@ -86,6 +87,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
             shell->error_code = 0;
             for (int i = 1; i < argc; i++)
                 shell->print("%s ", argv[i]);
+            shell->print("\n");
             return 0;
         }
         },
@@ -136,16 +138,16 @@ Command::Command(std::vector<Token> &t) {
         set_redirected_files(t);
 
         cmd_argc = t.size() + 1;
-        cmd_argv = new char *[cmd_argc];
+        cmd_argv = new char *[cmd_argc + 1];
         cmd_argv[0] = strdup(cmd_name.c_str());
         for (size_t i = 0; i < t.size(); i++) {
             cmd_argv[i + 1] = strdup(t[i].value.c_str());
         }
+        cmd_argv[cmd_argc] = nullptr;
     } else {
         cmd_argc = 0;
     }
 }
-
 
 Command::~Command() {
     for (size_t i = 0; i < cmd_argc; i++)
@@ -155,6 +157,14 @@ Command::~Command() {
 }
 
 void Command::execute(Shell *shell) {
+    int saved_in = dup(STDIN_FILENO),
+            saved_out = dup(STDOUT_FILENO),
+            saved_err = dup(STDERR_FILENO);
+    if (input_file != STDIN_FILENO || output_file != STDOUT_FILENO || error_file != STDERR_FILENO)
+        shell->is_ncurses = false;
+    dup2(input_file, STDIN_FILENO);
+    dup2(output_file, STDOUT_FILENO);
+    dup2(error_file, STDERR_FILENO);
     if (internal_functions.find(cmd_name) != internal_functions.end())
         internal_functions[cmd_name](cmd_argc, cmd_argv, shell);
     else {
@@ -198,7 +208,16 @@ void Command::execute(Shell *shell) {
             exit(1);
         }
     }
-
+    fsync(STDIN_FILENO);
+    fsync(STDOUT_FILENO);
+    fsync(STDERR_FILENO);
+    dup2(saved_in, STDIN_FILENO);
+    dup2(saved_out, STDOUT_FILENO);
+    dup2(saved_err, STDERR_FILENO);
+    close(saved_in);
+    close(saved_out);
+    close(saved_err);
+    shell->is_ncurses = true;
 }
 
 void Command::set_redirected_files(std::vector<Token> &params) {
@@ -215,13 +234,13 @@ void Command::set_redirected_files(std::vector<Token> &params) {
                 switch (params[i].value[0]) {
                     case '1':
                     case '>':
-                        output_file = params[i + 1].value;
+                        output_file = open(params[i + 1].value.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0777);
                         break;
                     case '2':
-                        error_file = params[i + 1].value;
+                        error_file = open(params[i + 1].value.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0777);
                         break;
                     case '<':
-                        input_file = params[i + 1].value;
+                        input_file = open(params[i + 1].value.c_str(), O_RDONLY | O_CREAT | O_TRUNC, 0777);
                 }
                 params.erase(params.begin() + i + 1, params.begin() + i + 3);
                 i -= 2;

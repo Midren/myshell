@@ -5,6 +5,7 @@
 #include <string>
 #include <functional>
 #include <curses.h>
+#include <zconf.h>
 
 #include "Token.h"
 #include "Shell.h"
@@ -25,9 +26,9 @@ private:
     void set_background_mode(std::vector<Token> &params);
 
     bool is_background;
-    std::string input_file;
-    std::string output_file;
-    std::string error_file;
+    int input_file = STDIN_FILENO;
+    int output_file = STDOUT_FILENO;
+    int error_file = STDERR_FILENO;
     std::string cmd_name;
     int cmd_argc;
     char **cmd_argv;
