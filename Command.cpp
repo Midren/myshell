@@ -157,9 +157,7 @@ Command::~Command() {
 }
 
 void Command::execute(Shell *shell) {
-    for(int i = 0; i < cmd_argc; i++) {
-        std::cout << "+" << cmd_argv[i];
-    }
+    bool old_ncurses = shell->is_ncurses;
     int saved_in = dup(STDIN_FILENO),
             saved_out = dup(STDOUT_FILENO),
             saved_err = dup(STDERR_FILENO);
@@ -220,7 +218,7 @@ void Command::execute(Shell *shell) {
     close(saved_in);
     close(saved_out);
     close(saved_err);
-    shell->is_ncurses = true;
+    shell->is_ncurses = old_ncurses;
 }
 
 void Command::set_redirected_files(std::vector<Token> &params) {
