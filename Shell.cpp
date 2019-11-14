@@ -260,18 +260,18 @@ void Shell::execute(std::string line) {
             commands.emplace_back(cmd);
         }
     }
-    int tmp_fd[2];
-    pipe(tmp_fd);
-    for (size_t i = 0; i < commands.size(); i++) {
-        if (i == commands.size() - 1) {
-            commands[i].set_OFD(STDOUT_FILENO);
-        } else {
-            commands[i].set_OFD(tmp_fd[1]);
-            commands[i + 1].set_IFD(tmp_fd[0]);
-        }
+    int prev = -1;
+    for (size_t i = 0; i < commands.size() - 1; i++) {
+        int tmp_fd[2];
+        while (pipe(tmp_fd) == -1) {}
+        commands[i].set_OFD(tmp_fd[1]);
+        commands[i + 1].set_IFD(tmp_fd[0]);
+        commands[i].execute(this);
+        close(tmp_fd[1]);
+        close(prev);
+        prev = tmp_fd[0];
     }
-    std::for_each(commands.begin(), commands.end(),
-                  std::bind(std::mem_fn(&Command::execute), std::placeholders::_1, this));
+    commands[commands.size() - 1].execute(this);
 }
 
 void Shell::get_env_vars(char **environ) {
