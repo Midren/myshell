@@ -175,8 +175,8 @@ void Command::execute(Shell *shell) {
     if (internal_functions.find(cmd_name) != internal_functions.end())
         internal_functions[cmd_name](cmd_argc, cmd_argv, shell);
     else {
-        int child_to_parent[2];
-        if (pipe(child_to_parent) == -1) {
+        int stdout_pipe[2], stderr_pipe[2];
+        if (pipe(stdout_pipe) == -1 || pipe(stderr_pipe) == -1) {
             std::cerr << "Error creating pipe" << std::endl;
             shell->error_code = -2;
             return;
@@ -187,7 +187,8 @@ void Command::execute(Shell *shell) {
             std::cerr << "Failed to fork" << std::endl;
             shell->error_code = -1;
         } else if (pid > 0) {
-            close(child_to_parent[1]);
+            close(stdout_pipe[1]);
+            close(stderr_pipe[1]);
             if (is_background)
                 return;
             if ((pid = waitpid(pid, &status, 0)) < 0) {
@@ -196,7 +197,7 @@ void Command::execute(Shell *shell) {
             }
 
             char buffer[BUFFSIZE];
-            FILE *child_input = fdopen(child_to_parent[0], "r");
+            FILE *child_input = fdopen(stdout_pipe[0], "r");
             do {
                 size_t count = fread(buffer, sizeof(char), BUFFSIZE, child_input);
                 if (ferror(child_input)) {
@@ -207,10 +208,23 @@ void Command::execute(Shell *shell) {
             } while (!feof(child_input));
             fclose(child_input);
 
+            FILE *child_err = fdopen(stderr_pipe[0], "r");
+            do {
+                size_t count = fread(buffer, sizeof(char), BUFFSIZE, child_err);
+                if (ferror(child_input)) {
+                    break;
+                }
+                buffer[count] = '\0';
+                shell->print("%s", buffer);
+            } while (!feof(child_input));
+            fclose(child_err);
+
             shell->error_code = status;
         } else {
-            close(child_to_parent[0]);
-            dup2(child_to_parent[1], STDOUT_FILENO);
+            close(stdout_pipe[0]);
+            dup2(stdout_pipe[1], STDOUT_FILENO);
+            close(stderr_pipe[0]);
+            dup2(stderr_pipe[1], STDERR_FILENO);
             execvp(cmd_name.c_str(), cmd_argv);
             std::cerr << "Failed to exec!" << std::endl;
             exit(1);
