@@ -305,7 +305,10 @@ std::vector<Token> parse(const std::string &line) {
             }
             tokens.emplace_back(word, TokenType::CmdQuoteWord);
         } else if (is_with_symbol(word, '=')) {
-            tokens.emplace_back(word, TokenType::AddVar);
+            if (tokens.size() == 0 || tokens.back().type == TokenType::AddVar)
+                tokens.emplace_back(word, TokenType::AddVar);
+            else
+                tokens.emplace_back(word, TokenType::CmdWord);
         } else if (word == "|") {
             tokens.emplace_back(word, TokenType::Pipe);
         } else if (word == "&") {
