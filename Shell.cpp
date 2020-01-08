@@ -13,6 +13,7 @@
 #include "Command.h"
 #include "util.h"
 
+#define KEY_CTRL_L 12
 #ifdef __APPLE__
 extern char **environ;
 #undef KEY_BACKSPACE
@@ -99,7 +100,15 @@ void Shell::start() {
                 getsyx(y, x);
                 x + (y - start_y) * length_of_the_line < max_x
                 ? (x == length_of_the_line - 1) ? move(y + 1, 0) : move(y, x + 1)
-                : move(y, x);;
+                : move(y, x);
+                break;
+            case KEY_END:
+                getsyx(y, x);
+                move(start_y + (line.size() + start_x) / length_of_the_line, max_x % length_of_the_line);
+                break;
+            case KEY_HOME:
+                getsyx(y, x);
+                move(start_y, start_x);
                 break;
             case KEY_UP:
                 if (!history.empty()) {
@@ -152,6 +161,14 @@ void Shell::start() {
             case KEY_RESIZE:
                 refresh();
                 break;
+            case KEY_CTRL_L:
+                clear();
+                refresh();
+                print("%s $ ", pwd.c_str());
+                max_x = start_x;
+                line.clear();
+                new_command = true;
+                break;
             default:
                 getsyx(y, x);
                 if (!new_command && !line.empty()) {
@@ -166,7 +183,9 @@ void Shell::start() {
                 move(start_y, start_x);
                 clrtobot();
                 print("%s", line.c_str());
-                (x == length_of_the_line - 1) ? move(y + 1, 0) : move(y, x + 1);
+                (x == length_of_the_line - 1)
+                ? move(y + 1, 0)
+                : move(y, x + 1);
                 ++max_x;
                 break;
         }
