@@ -109,7 +109,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
                     if (shell->local_variables.find(std::string(argv[i])) != shell->local_variables.end())
                         setenv(argv[i], shell->local_variables[std::string(argv[i])].c_str(), 1);
                     else
-                        std::cerr << argv[i] << " is not defined!" << std::endl;
+                        shell->print("Variable is not defined!\n");
                 }
             }
             return 0;
