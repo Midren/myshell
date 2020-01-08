@@ -328,8 +328,22 @@ std::vector<Token> parse(const std::string &line) {
             } else {
                 tokens.emplace_back(word, TokenType::Var);
             }
-        } else if (word[0] == '>' || word[1] == '>' || word[0] == '<') {
-            tokens.emplace_back(word, TokenType::Redirection);
+        } else if (word[0] == '>' || word[0] == '<') {
+            tokens.emplace_back(word.substr(0, 1), TokenType::Redirection);
+            if (word.length() > 1)
+                tokens.emplace_back(word.substr(1, word.length() - 1), TokenType::CmdWord);
+        } else if (word[1] == '>') {
+            if (word.length() >= 4 && word.substr(0, 4) == "2>&1") {
+                tokens.emplace_back(word.substr(0, 4), TokenType::Redirection);
+                if (word.length() > 4)
+                    tokens.emplace_back(word.substr(4, word.length() - 4), TokenType::CmdWord);
+            } else if (word[0] == '1' || word[1] == '2') {
+                tokens.emplace_back(word.substr(0, 2), TokenType::Redirection);
+                if (word.length() > 2)
+                    tokens.emplace_back(word.substr(2, word.length() - 2), TokenType::CmdWord);
+            } else {
+                //TODO: Throw exception
+            }
         } else if (word.find_first_of("*?[") != std::string::npos) {
             for (auto &value : replace_wildcards(word))
                 tokens.push_back(value);
