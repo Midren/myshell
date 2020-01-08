@@ -28,8 +28,8 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
                     return 1;
                 }
             }
+            shell->print("%d\n", shell->error_code);
             shell->error_code = 0;
-            shell->print("%d", shell->error_code);
             return 0;
         }},
         {std::string("mpwd"),    [](int argc, char **argv, Shell *shell) {

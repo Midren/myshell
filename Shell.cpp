@@ -83,7 +83,7 @@ void Shell::start() {
                 execute(line);
                 line.clear();
                 std::cout.flush();
-                print("\n%s $ ", pwd.c_str());
+                print("%s $ ", pwd.c_str());
                 start_x = pwd.size() + 3;
                 refresh();
                 getsyx(start_y, max_x);
