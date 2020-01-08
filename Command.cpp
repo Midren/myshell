@@ -35,7 +35,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         {std::string("mpwd"),    [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if ((strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) && argv[i][0] == '-') {
-                    shell->print("\nmpwd [-h|--help] -- show current directory\n");
+                    shell->print("mpwd [-h|--help] -- show current directory\n");
                     return 0;
                 } else {
                     shell->error_code = 1;
@@ -48,7 +48,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         {std::string("mcd"),     [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if ((strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) && argv[i][0] == '-') {
-                    shell->print("\nmcd <path> [-h|--help]  -- Go to path <path>\n");
+                    shell->print("mcd <path> [-h|--help]  -- Go to path <path>\n");
                     shell->error_code = 0;
                     return 0;
                 } else
@@ -72,7 +72,7 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         {std::string("mexit"),   [](int argc, char **argv, Shell *shell) {
             for (int i = 1; i < argc; i++) {
                 if ((strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) && argv[i][0] == '-') {
-                    shell->print("\nmexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0\n");
+                    shell->print("mexit [exit code] [-h|--help]\n\nif called without with exit code, exit with 0\n");
                     return 0;
                 }
             }
@@ -196,8 +196,7 @@ void Command::execute(Shell *shell) {
                 if (ferror(child_input)) {
                     break;
                 }
-                if (count >= 0)
-                    buffer[count] = '\0';
+                buffer[count] = '\0';
                 shell->print("%s", buffer);
             } while (!feof(child_input));
             fclose(child_input);

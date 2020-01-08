@@ -18,6 +18,8 @@ public:
 
     Command(const Command &c);
 
+    Command &operator=(const Command &c) = delete;
+
     ~Command();
 
     void execute(Shell *shell);

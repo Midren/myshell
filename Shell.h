@@ -20,7 +20,7 @@ public:
 
     void start();
 
-    void execute(std::string line);
+    void execute(const std::string &line);
 
     template<typename... Args>
     void print(const char *str, Args... args) {
@@ -40,7 +40,9 @@ public:
 
 private:
     friend class Command;
+
     void update_history();
+
     std::map<std::string, std::string> local_variables;
     std::stack<std::string> history;
     std::string pwd;
@@ -49,6 +51,8 @@ private:
     bool is_ncurses = true;
 
     void get_env_vars(char **environ);
+
+    void replace_vars(std::vector<Token> &cmd);
 };
 
 std::vector<Token> parse(const std::string &line);

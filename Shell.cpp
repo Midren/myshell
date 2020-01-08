@@ -176,7 +176,81 @@ void Shell::start() {
     return;
 }
 
-void Shell::execute(std::string line) {
+void Shell::replace_vars(std::vector<Token> &cmd) {
+    for (size_t t = 0; t < cmd.size(); t++) {
+        auto &token = cmd[t];
+        if (token.type == TokenType::AddVar) {
+            size_t ind = token.value.find('=');
+            auto tokens = parse(token.value.substr(ind + 1,
+                                                   token.value.size() - ind - 1));
+            replace_vars(tokens);
+            if (tokens.size() > 1) {
+                //TODO: Add exceptions
+            }
+            local_variables[token.value.substr(0, ind)] = tokens[0].value;
+            cmd.erase(cmd.begin() + t);
+        } else if (token.type == TokenType::Var) {
+            token.value = local_variables[token.value.substr(1, token.value.length() - 1)];
+            token.type = TokenType::CmdWord;
+        } else if (token.type == TokenType::CmdDoubleQuoteWord) {
+            std::string new_val;
+            size_t last = 0;
+            for (size_t i = 0; i < token.value.size(); i++) {
+                if (token.value[i] == '$') {
+                    new_val += token.value.substr(last, i - last);
+                    last = i;
+                    while (token.value[i] != ' ' && (i != token.value.size())) { i++; }
+                    new_val += local_variables[token.value.substr(last + 1, i - last - 1)];
+                    last = i;
+                }
+            }
+            if (last != token.value.size())
+                new_val += token.value.substr(last, token.value.size() - last);
+            token.value = new_val;
+            token.type = TokenType::CmdWord;
+        } else if (token.type == TokenType::InlineCmd) {
+            std::string res;
+            FILE *tmp = tmpfile();
+            int saved_in = dup(STDIN_FILENO),
+                    saved_out = dup(STDOUT_FILENO),
+                    tmp_fd = fileno(tmp);
+
+            auto sh = Shell(false);
+            sh.execute("mcd " + pwd);
+            dup2(tmp_fd, STDOUT_FILENO);
+
+            auto cmd = token.value.substr(token.value.find_first_of('$') + 2,
+                                          token.value.size() - token.value.find_first_of('$') - 3);
+            sh.execute(cmd);
+
+            fflush(tmp);
+            rewind(tmp);
+            const size_t buffer_size = 4096;
+            auto *buf = new char[buffer_size + 1];
+            while (fread(buf, sizeof(char), buffer_size, tmp) > 0) {
+                if (ferror(tmp) && !feof(tmp)) {
+                    perror("Error happened inside internal command");
+                    error_code = 4;
+                    delete[] buf;
+                    return;
+                } else {
+                    res += buf;
+                }
+            }
+            delete[] buf;
+
+            fclose(tmp);
+            dup2(saved_out, STDOUT_FILENO);
+            dup2(saved_in, STDIN_FILENO);
+            close(saved_in);
+            close(saved_out);
+
+            token.value = token.value.substr(0, token.value.find_first_of('$')) + res;
+        }
+    }
+}
+
+void Shell::execute(const std::string &line) {
     update_history();
     auto tokens = parse(line);
 
@@ -187,80 +261,11 @@ void Shell::execute(std::string line) {
     std::vector<Command> commands;
 
     for (auto &cmd:token_commands) {
-        for (size_t t = 0; t < cmd.size(); t++) {
-            auto &token = cmd[t];
-            if (token.type == TokenType::AddVar) {
-                size_t ind = token.value.find('=');
-                local_variables[token.value.substr(0, ind)] =
-                        token.value.substr(ind + 1,
-                                           token.value.size() - ind - 1);
-                cmd.erase(cmd.begin() + t);
-            } else if (token.type == TokenType::Var) {
-                token.value = local_variables[token.value.substr(1, token.value.length() - 1)];
-                token.type = TokenType::CmdWord;
-            } else if (token.type == TokenType::CmdDoubleQuoteWord) {
-                std::string new_val;
-                size_t last = 0;
-                for (size_t i = 0; i < token.value.size(); i++) {
-                    if (token.value[i] == '$') {
-                        new_val += token.value.substr(last, i - last);
-                        last = i;
-                        while (token.value[i] != ' ' && (i != token.value.size())) { i++; }
-                        new_val += local_variables[token.value.substr(last + 1, i - last - 1)];
-                        last = i;
-                    }
-                }
-                if (last != token.value.size())
-                    new_val += token.value.substr(last, token.value.size() - last);
-                token.value = new_val;
-                token.type = TokenType::CmdWord;
-            } else if (token.type == TokenType::CmdWildCard) {
-                auto values = replace_wildcards(token.value);
-                cmd.insert(cmd.begin() + t, values.begin(), values.end());
-                cmd.erase(cmd.begin() + values.size() + t);
-            } else if (token.type == TokenType::InlineCmd) {
-                std::string res;
-                FILE *tmp = tmpfile();
-                int saved_in = dup(STDIN_FILENO),
-                        saved_out = dup(STDOUT_FILENO),
-                        tmp_fd = fileno(tmp);
-
-                auto sh = Shell(false);
-                sh.execute("mcd " + pwd);
-                dup2(tmp_fd, STDOUT_FILENO);
-
-                sh.execute(token.value);
-
-                fflush(tmp);
-                rewind(tmp);
-                const size_t buffer_size = 4096;
-                auto *buf = new char[buffer_size + 1];
-                while (fread(buf, sizeof(char), buffer_size, tmp) > 0) {
-                    if (ferror(tmp) && !feof(tmp)) {
-                        perror("Error happened inside internal command");
-                        error_code = 4;
-                        delete[] buf;
-                        return;
-                    } else {
-                        res += buf;
-                    }
-                }
-                delete[] buf;
-
-                fclose(tmp);
-                dup2(saved_out, STDOUT_FILENO);
-                dup2(saved_in, STDIN_FILENO);
-                close(saved_in);
-                close(saved_out);
-
-                token.value = res;
-            }
-        }
-        if (!cmd.empty()) {
+        replace_vars(cmd);
+        if (!cmd.empty())
             commands.emplace_back(cmd);
-        }
     }
-    if (commands.size() == 0) {
+    if (commands.empty()) {
         return;
     }
     int prev = -1;
@@ -304,22 +309,18 @@ std::vector<Token> parse(const std::string &line) {
                 word += tmp + '\'';
             }
             tokens.emplace_back(word, TokenType::CmdQuoteWord);
-        } else if (is_with_symbol(word, '=')) {
-            if (tokens.size() == 0 || tokens.back().type == TokenType::AddVar)
-                tokens.emplace_back(word, TokenType::AddVar);
-            else
-                tokens.emplace_back(word, TokenType::CmdWord);
+        } else if (is_with_symbol(word, '=') && (tokens.empty() || tokens.back().type == TokenType::AddVar)) {
+            tokens.emplace_back(word, TokenType::AddVar);
         } else if (word == "|") {
             tokens.emplace_back(word, TokenType::Pipe);
         } else if (word == "&") {
             tokens.emplace_back(word, TokenType::BackgroundType);
-        } else if (word[0] == '$') {
-            if (word[1] == '(') {
+        } else if (is_with_symbol(word, '$')) {
+            if (word[word.find_first_of('$') + 1] == '(') {
                 if (word.back() != ')') {
                     std::getline(ss, tmp, ')');
                     word += tmp + ")";
                 }
-                word = word.substr(2, word.size() - 3);
                 tokens.emplace_back(word, TokenType::InlineCmd);
             } else {
                 tokens.emplace_back(word, TokenType::Var);
@@ -327,7 +328,10 @@ std::vector<Token> parse(const std::string &line) {
         } else if (word[0] == '>' || word[1] == '>' || word[0] == '<') {
             tokens.emplace_back(word, TokenType::Redirection);
         } else if (word.find_first_of("*?[") != std::string::npos) {
-            tokens.emplace_back(word, TokenType::CmdWildCard);
+            for (auto &value : replace_wildcards(word)) {
+                tokens.push_back(value);
+            }
+//            tokens.emplace_back(word, TokenType::CmdWildCard);
         } else {
             tokens.emplace_back(word, TokenType::CmdWord);
         }
