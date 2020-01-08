@@ -260,6 +260,9 @@ void Shell::execute(std::string line) {
             commands.emplace_back(cmd);
         }
     }
+    if (commands.size() == 0) {
+        return;
+    }
     int prev = -1;
     for (size_t i = 0; i < commands.size() - 1; i++) {
         int tmp_fd[2];
@@ -271,7 +274,7 @@ void Shell::execute(std::string line) {
         close(prev);
         prev = tmp_fd[0];
     }
-    commands[commands.size() - 1].execute(this);
+    commands.back().execute(this);
 }
 
 void Shell::get_env_vars(char **environ) {
