@@ -166,7 +166,7 @@ void Command::execute(Shell *shell) {
     int saved_in = dup(STDIN_FILENO),
             saved_out = dup(STDOUT_FILENO),
             saved_err = dup(STDERR_FILENO);
-    if (input_file != STDIN_FILENO || output_file != STDOUT_FILENO || error_file != STDERR_FILENO)
+    if (output_file != STDOUT_FILENO)
         shell->is_ncurses = false;
 
     dup2(input_file, STDIN_FILENO);
@@ -198,29 +198,41 @@ void Command::execute(Shell *shell) {
 
             char buffer[BUFFSIZE];
             FILE *child_input = fdopen(stdout_pipe[0], "r");
-            do {
-                size_t count = fread(buffer, sizeof(char), BUFFSIZE, child_input);
-                if (ferror(child_input)) {
-                    break;
-                }
-                buffer[count] = '\0';
-                shell->print("%s", buffer);
-            } while (!feof(child_input));
-            fclose(child_input);
-
             FILE *child_err = fdopen(stderr_pipe[0], "r");
+            bool stdout_flag = false, stderr_flag = false;
             do {
-                size_t count = fread(buffer, sizeof(char), BUFFSIZE, child_err);
-                if (ferror(child_input)) {
-                    break;
+                if (!stdout_flag) {
+                    size_t count = fread(buffer, sizeof(char), BUFFSIZE, child_input);
+                    if (ferror(child_input)) {
+                        break;
+                    }
+                    buffer[count] = '\0';
+                    shell->print("%s", buffer);
+
+                    if (feof(child_input)) {
+                        stdout_flag = true;
+                        fclose(child_input);
+                    }
                 }
-                buffer[count] = '\0';
-                shell->print("%s", buffer);
-            } while (!feof(child_input));
-            fclose(child_err);
+
+                if (!stderr_flag) {
+                    size_t count = fread(buffer, sizeof(char), BUFFSIZE, child_err);
+                    if (ferror(child_err)) {
+                        break;
+                    }
+                    buffer[count] = '\0';
+                    shell->print("%s", buffer);
+                    if (feof(child_err)) {
+                        stderr_flag = true;
+                        fclose(child_err);
+                    }
+                }
+            } while (!stderr_flag && !stdout_flag);
 
             shell->error_code = status;
         } else {
+            fsync(STDOUT_FILENO);
+            fsync(STDERR_FILENO);
             close(stdout_pipe[0]);
             dup2(stdout_pipe[1], STDOUT_FILENO);
             close(stderr_pipe[0]);
