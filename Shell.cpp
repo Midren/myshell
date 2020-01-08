@@ -190,7 +190,10 @@ void Shell::replace_vars(std::vector<Token> &cmd) {
             local_variables[token.value.substr(0, ind)] = tokens[0].value;
             cmd.erase(cmd.begin() + t);
         } else if (token.type == TokenType::Var) {
-            token.value = local_variables[token.value.substr(1, token.value.length() - 1)];
+            token.value = token.value.substr(0, token.value.find_first_of('$')) +
+                          local_variables[token.value.substr(token.value.find_first_of('$') + 1,
+                                                             token.value.length() - token.value.find_first_of('$') -
+                                                             1)];
             token.type = TokenType::CmdWord;
         } else if (token.type == TokenType::CmdDoubleQuoteWord) {
             std::string new_val;
@@ -328,10 +331,8 @@ std::vector<Token> parse(const std::string &line) {
         } else if (word[0] == '>' || word[1] == '>' || word[0] == '<') {
             tokens.emplace_back(word, TokenType::Redirection);
         } else if (word.find_first_of("*?[") != std::string::npos) {
-            for (auto &value : replace_wildcards(word)) {
+            for (auto &value : replace_wildcards(word))
                 tokens.push_back(value);
-            }
-//            tokens.emplace_back(word, TokenType::CmdWildCard);
         } else {
             tokens.emplace_back(word, TokenType::CmdWord);
         }
