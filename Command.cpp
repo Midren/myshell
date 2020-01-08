@@ -83,6 +83,12 @@ std::map<std::string, std::function<int(int argc, char **argv, Shell *)>> Comman
         }
         },
         {std::string("mecho"),   [](int argc, char **argv, Shell *shell) {
+            for (int i = 1; i < argc; i++) {
+                if ((strcmp(argv[i], "-h") != 0 || strcmp(argv[1], "--help") != 0) && argv[i][0] == '-') {
+                    shell->print("mecho [-h|--help] [text|$<var_name>] [text|$<var_name>] [text|$<var_name>] ...\n");
+                    return 0;
+                }
+            }
             shell->error_code = 0;
             for (int i = 1; i < argc; i++)
                 shell->print("%s ", argv[i]);
