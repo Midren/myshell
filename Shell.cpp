@@ -390,3 +390,6 @@ void Shell::update_history() {
     }
     history_file.close();
 }
+
+std::vector<int> Shell::pids{};
+

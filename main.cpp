@@ -1,7 +1,6 @@
 #include "Shell.h"
 #include <fstream>
 
-
 int main(int argc, char *argv[]) {
     if (argc > 2)
         return 1;
@@ -14,6 +13,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     auto shell = Shell();
+    atexit(Shell::kill_children);
     shell.start();
     return 0;
 }

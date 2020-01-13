@@ -192,8 +192,10 @@ void Command::execute(Shell *shell) {
             close(stdout_pipe[1]);
             close(stderr_pipe[1]);
             fflush(stdin);
-            if (is_background)
+            if (is_background) {
+                Shell::pids.push_back(pid);
                 return;
+            }
             if ((pid = waitpid(pid, &status, 0)) < 0) {
                 std::cerr << "waitpid error" << std::endl;
                 exit(1);

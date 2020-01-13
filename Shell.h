@@ -7,6 +7,9 @@
 #include <vector>
 #include "Token.h"
 #include <curses.h>
+#include <algorithm>
+#include <signal.h>
+#include <iostream>
 
 const std::string HISTORY_FILE = ".history";
 
@@ -38,6 +41,13 @@ public:
             printf("%s", str);
     }
 
+    static void kill_children() {
+        std::for_each(Shell::pids.begin(), Shell::pids.end(), [](int pid) {
+            kill(pid, SIGKILL);
+        });
+    }
+
+    static std::vector<int> pids;
 private:
     friend class Command;
 
