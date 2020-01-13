@@ -175,6 +175,8 @@ void Command::execute(Shell *shell) {
     if (internal_functions.find(cmd_name) != internal_functions.end())
         internal_functions[cmd_name](cmd_argc, cmd_argv, shell);
     else {
+        fflush(stdout);
+        fflush(stderr);
         int stdout_pipe[2], stderr_pipe[2];
         if (pipe(stdout_pipe) == -1 || pipe(stderr_pipe) == -1) {
             std::cerr << "Error creating pipe" << std::endl;
@@ -189,6 +191,7 @@ void Command::execute(Shell *shell) {
         } else if (pid > 0) {
             close(stdout_pipe[1]);
             close(stderr_pipe[1]);
+            fflush(stdin);
             if (is_background)
                 return;
             if ((pid = waitpid(pid, &status, 0)) < 0) {
@@ -202,6 +205,7 @@ void Command::execute(Shell *shell) {
             bool stdout_flag = false, stderr_flag = false;
             do {
                 if (!stdout_flag) {
+                    fflush(stdin);
                     size_t count = fread(buffer, sizeof(char), BUFFSIZE, child_input);
                     if (ferror(child_input)) {
                         break;
@@ -232,11 +236,15 @@ void Command::execute(Shell *shell) {
             shell->error_code = status;
         } else {
             fsync(STDOUT_FILENO);
-            fsync(STDERR_FILENO);
             close(stdout_pipe[0]);
             dup2(stdout_pipe[1], STDOUT_FILENO);
+            fflush(stdout);
+
+            fsync(STDERR_FILENO);
             close(stderr_pipe[0]);
             dup2(stderr_pipe[1], STDERR_FILENO);
+            fflush(stderr);
+
             execvp(cmd_name.c_str(), cmd_argv);
             std::cerr << "Failed to exec!" << std::endl;
             exit(1);

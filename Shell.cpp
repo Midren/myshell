@@ -35,7 +35,7 @@ Shell::Shell() {
 
     FILE *fd = fopen("/dev/tty", "r+");
     scr = newterm(nullptr, fd, fd);
-    setvbuf(stdout, nullptr, _IONBF, 0);
+    setvbuf(stdout, nullptr, _IONBF, 1024);
     noecho();
     scrollok(stdscr, true);
 
