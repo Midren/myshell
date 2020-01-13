@@ -2,6 +2,7 @@
 #include <dirent.h>
 #include <libgen.h>
 #include <cstring>
+#include <iostream>
 
 bool is_with_symbol(const std::string &str, char sym) {
     //TODO: Add check for escape symbol (\", \' \=)
@@ -72,8 +73,13 @@ std::string join(const std::vector<std::string> &array, const char separator) {
 std::vector<Token> replace_wildcards(const std::string &data) {
     char *path, *pattern;
     char *str = strdup(data.c_str());
-    path = dirname(str);
-    pattern = basename(str);
+    if (data.find_last_of('/') != std::string::npos) {
+        path = strdup(data.substr(0, data.find_last_of('/') + 1).c_str());
+        pattern = strdup(data.substr(data.find_last_of('/') + 1, std::string::npos).c_str());
+    } else {
+        path = strdup("");
+        pattern = strdup(str);
+    }
     std::vector<Token> files;
     DIR *dp;
     struct dirent *ep;
@@ -85,5 +91,8 @@ std::vector<Token> replace_wildcards(const std::string &data) {
             }
         }
     }
+    free(str);
+    free(path);
+    free(pattern);
     return files;
 }
